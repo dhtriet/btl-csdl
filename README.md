@@ -1,5 +1,7 @@
 # Nexus Learning Resource Center
 
+Web online: **https://csdl.alwaysdata.net/** — [cấu hình hosting](docs/hosting.md).
+
 Ban demo full-stack cho he thong quan ly trung tam tai nguyen hoc tap.
 
 ## Cong nghe
