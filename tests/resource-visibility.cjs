@@ -1,0 +1,61 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {spawn,spawnSync}=require('node:child_process');const {request,chromium}=require(process.env.NEXUS_PLAYWRIGHT_MODULE||'playwright');
+if(!/^resource_center_test_[0-9]+$/.test(process.env.NEXUS_DB_NAME||''))throw Error('Dedicated test database required');
+const root=path.resolve(__dirname,'..').replaceAll('\\','/'),clients=[];let server,browser;
+function php(code){const r=spawnSync('php',['-r',`require '${root}/app/config.php';require '${root}/app/database.php';${code}`],{encoding:'utf8',env:process.env});assert.equal(r.status,0,r.stderr);return r.stdout;}
+async function login(name){const ctx=await request.newContext({baseURL:'http://127.0.0.1:8013'});clients.push(ctx);const r=await ctx.post('/api/login',{data:{username:name,password:'12345'}});assert.equal(r.status(),200);const payload=await r.json();return{ctx,token:payload.csrf_token,user:payload.user};}
+async function send(c,url,method='GET',data,csrf=true){return c.ctx.fetch(url,{method,data,headers:csrf?{'X-CSRF-Token':c.token}:{}});}
+async function json(c,url,method='GET',data){const r=await send(c,url,method,data);assert(r.ok(),`${r.status()} ${await r.text()}`);return(await r.json()).data;}
+(async()=>{server=spawn('php',['-S','127.0.0.1:8013','-t','public'],{cwd:root,env:process.env,stdio:'ignore',windowsHide:true});await new Promise(r=>setTimeout(r,650));const admin=await login('user1'),student=await login('user3'),staff=await login('user2');
+const pub=JSON.parse(php('echo json_encode(Database::connection()->query("SELECT id FROM publishers LIMIT 1")->fetchColumn());'));
+const book=await json(admin,'/api/manage/books','POST',{title:'Visibility regression',language:'Tiếng Việt',publisher_id:pub});
+const copy=await json(admin,'/api/manage/copies','POST',{book_id:book.id,barcode:'VIS_'+Date.now(),storage_location:'Test',condition_status:'good',status:'available'});
+const room=await json(admin,'/api/manage/rooms','POST',{name:'Visibility room '+Date.now(),room_type:'classroom',location:'Test',capacity:8,status:'available',is_visible:0});
+const equip=await json(admin,'/api/manage/equipment','POST',{name:'Visibility device',equipment_type:'Test',total_quantity:2,status:'available'});
+assert.equal(book.is_visible,1);assert.equal(room.is_visible,0);
+async function mutate(type,id,method,extra={}){const current=await json(admin,`/api/manage/${type}/${id}`);return json(admin,`/api/manage/${type}/${id}`,method,{version:current.version,...extra});}
+assert.equal((await send(student,`/api/manage/books/${book.id}`,'PATCH',{is_visible:0})).status(),403);
+assert.equal((await send(staff,`/api/manage/books/${book.id}`,'DELETE',{version:book.version})).status(),403);
+assert.equal((await send(admin,`/api/manage/books/${book.id}`,'PATCH',{is_visible:0,version:book.version},false)).status(),403);
+await mutate('copies',copy.id,'PATCH',{is_visible:0});
+let detail=await json(student,`/api/books/${book.id}`);assert.equal(detail.copies.length,0);
+assert.equal((await send(student,'/api/book-loan-requests','POST',{items:[{book_id:book.id,quantity:1,requested_due_date:'2026-12-01'}]})).status(),422);
+await mutate('copies',copy.id,'PATCH',{is_visible:1});
+const requestBook=await json(student,'/api/book-loan-requests','POST',{items:[{book_id:book.id,quantity:1,requested_due_date:'2026-12-01'}]});
+await mutate('books',book.id,'PATCH',{is_visible:0});
+assert.equal((await send(student,`/api/books/${book.id}`)).status(),404);
+for(const url of [`/reader.php?book_id=${book.id}`,`/ebook.php?book_id=${book.id}`])assert.equal((await student.ctx.get(url)).status(),404);
+assert(!(await json(student,'/api/books')).some(x=>x.id===book.id));
+assert.equal((await send(staff,`/api/borrow-requests/book/${requestBook.id}/review`,'POST',{decision:'approved'})).status(),409);
+assert.equal((await send(admin,`/api/manage/books/${book.id}`,'DELETE',{version:(await json(admin,`/api/manage/books/${book.id}`)).version})).status(),409);
+const ai=JSON.parse(php(`require '${root}/app/assistant.php';echo json_encode(['catalog'=>array_column(assistant_catalog(Database::connection()),'id'),'kit'=>learning_kit_stock(Database::connection(),['books'=>[['id'=>${book.id}]],'weeks'=>[['title'=>'stale']],'sources'=>[['title'=>'stale']]])]);`));assert(!ai.catalog.includes(book.id));assert.deepEqual(ai.kit.books,[]);assert.deepEqual(ai.kit.sources,[]);assert.deepEqual(ai.kit.weeks,[]);
+await mutate('books',book.id,'PATCH',{is_visible:1});await json(staff,`/api/borrow-requests/book/${requestBook.id}/review`,'POST',{decision:'approved'});
+await mutate('books',book.id,'PATCH',{is_visible:0});
+assert.equal((await send(admin,`/api/manage/copies/${copy.id}`,'DELETE',{version:(await json(admin,`/api/manage/copies/${copy.id}`)).version})).status(),409);
+const history=await json(student,`/api/students/${student.user.student_code}/history`);assert(JSON.stringify(history).includes('Visibility regression'));
+const loanId=Number(php(`echo Database::connection()->query("SELECT id FROM loan_details WHERE copy_id=${copy.id} AND return_date IS NULL")->fetchColumn();`));
+await json(staff,`/api/returns/books/${loanId}`,'POST',{});await mutate('copies',copy.id,'DELETE');await mutate('books',book.id,'DELETE');
+assert(JSON.stringify(await json(student,`/api/students/${student.user.student_code}/history`)).includes('Visibility regression'));
+console.log('PASS hidden titles/copies, direct readers, request approval, active-loan deletion, history and AI cache');
+await mutate('equipment',equip.id,'PATCH',{is_visible:0});assert(!(await json(student,'/api/equipment/available')).some(x=>x.id===equip.id));
+assert.equal((await send(student,'/api/equipment-loan-requests','POST',{items:[{equipment_id:equip.id,quantity:1,requested_due_date:'2026-12-01'}]})).status(),422);
+assert(!(await json(student,'/api/rooms/available')).some(x=>x.id===room.id));
+assert.equal((await send(student,'/api/room-requests','POST',{room_id:room.id,use_date:'2026-12-01',start_time:'08:00',end_time:'09:00',attendee_count:2,purpose:'Visibility test'})).status(),422);
+const stale=await json(admin,`/api/manage/equipment/${equip.id}`);await mutate('equipment',equip.id,'PATCH',{is_visible:1});assert.equal((await send(admin,`/api/manage/equipment/${equip.id}`,'DELETE',{version:stale.version})).status(),409);
+await mutate('equipment',equip.id,'DELETE');assert.equal((await send(admin,`/api/manage/equipment/${equip.id}`)).status(),404);
+assert.equal(php(`echo Database::connection()->query("SELECT COUNT(*) FROM equipment WHERE id=${equip.id} AND deleted_at IS NOT NULL AND is_visible=0")->fetchColumn();`),'1');
+const image=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6X8sAAAAASUVORK5CYII=','base64');
+const upload=await admin.ctx.post('/api/manage/image',{headers:{'X-CSRF-Token':admin.token},multipart:{image:{name:'sample.png',mimeType:'image/png',buffer:image}}});assert.equal(upload.status(),201);const imagePath=(await upload.json()).data.path;
+let current=await json(admin,`/api/manage/rooms/${room.id}`);await json(admin,`/api/manage/rooms/${room.id}`,'PUT',{...current,image_path:imagePath,image_is_illustration:0});current=await json(admin,`/api/manage/rooms/${room.id}`);assert.equal(current.image_path,imagePath);assert.equal(current.image_is_illustration,0);
+await json(admin,`/api/manage/rooms/${room.id}`,'PUT',{...current,image_path:''});assert.equal((await json(admin,`/api/manage/rooms/${room.id}`)).image_path,null);
+browser=await chromium.launch({channel:'chrome',headless:true});const page=await browser.newPage({viewport:{width:1440,height:1000}});
+await page.goto('http://127.0.0.1:8013');await page.locator('[name=username]').fill('user1');await page.locator('[name=password]').fill('12345');await page.locator('#login-form button').click();await page.locator('#app-shell').waitFor({state:'visible'});await page.evaluate(()=>setView('manage'));await page.locator('[data-resource-type=rooms]').click();await page.locator('#management-search').fill(room.name);await page.locator('#management-search-form button').click();await page.locator(`[data-toggle-resource="${room.id}"]`).waitFor();
+await page.locator(`[data-toggle-resource="${room.id}"]`).click();await page.waitForFunction(id=>document.querySelector(`[data-toggle-resource="${id}"]`)?.textContent==='Ẩn',room.id);
+await page.locator('#management-visibility').selectOption('0');await page.waitForFunction(()=>document.querySelector('#management-table .empty-state')?.textContent.includes('Chưa có'));
+await page.locator('#management-visibility').selectOption('1');await page.locator(`[data-edit-resource="${room.id}"]`).click();await page.locator('#resource-editor:not(.is-hidden)').waitFor();
+await page.locator('[name=cover_file]').setInputFiles({name:'actual.jpg',mimeType:'image/jpeg',buffer:fs.readFileSync(path.join(root,'public',JSON.parse(fs.readFileSync(path.join(root,'docs/resource-image-import.json'),'utf8')).find(x=>x.table==='equipment').path))});
+assert.equal(await page.locator('[name=image_is_illustration]').isChecked(),false);await page.locator('#resource-editor-save').click();await page.locator('#resource-editor').waitFor({state:'hidden'});assert((await json(admin,`/api/manage/rooms/${room.id}`)).image_path);
+await page.locator(`[data-edit-resource="${room.id}"]`).click();await page.locator('#resource-remove-image').click();await page.locator('#resource-editor-save').click();await page.locator('#resource-editor').waitFor({state:'hidden'});assert.equal((await json(admin,`/api/manage/rooms/${room.id}`)).image_path,null);
+page.once('dialog',dialog=>dialog.accept());await page.locator(`[data-delete-resource="${room.id}"]`).click();await page.waitForFunction(id=>!document.querySelector(`[data-delete-resource="${id}"]`),room.id);assert.equal((await send(admin,`/api/manage/rooms/${room.id}`)).status(),404);console.log('PASS admin browser hide/show, filter, image upload/remove and confirmed deletion');
+fs.unlinkSync(path.join(root,'public',imagePath));console.log('PASS hidden rooms/equipment, stale deletion, soft deletion and image upload/replace/remove');
+})().catch(e=>{console.error(e);process.exitCode=1}).finally(async()=>{await browser?.close();for(const c of clients)await c.dispose();server?.kill();});

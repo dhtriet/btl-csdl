@@ -1,0 +1,6 @@
+{
+  "provider": "groq",
+  "api_key": "YOUR_GROQ_API_KEY",
+  "model": "openai/gpt-oss-120b",
+  "python": "python"
+}

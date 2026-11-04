@@ -1,0 +1,79 @@
+/* Desktop refinements. New optional actions stay hidden below desktop widths. */
+.desktop-only { display: none; }
+@media (min-width: 1000px) {
+  body { font-size: 14px; }
+  .desktop-only { display: inline-flex; }
+  .nav-item { font-size: 13px; }
+  .breadcrumb, #current-date { font-size: 12px; }
+  .topbar-user strong { font-size: 12px; }
+  .topbar-user span { font-size: 11px; }
+  .dashboard-intro p, .section-intro p { font-size: 13px; }
+  .campus-personal .panel-heading p, .campus-personal .empty-state,
+  .campus-personal .empty-state p, .campus-personal .personal-loan small { font-size: 12px; }
+  .campus-personal .empty-state strong, .campus-personal .personal-loan strong { font-size: 13px; }
+  .campus-personal .stat-card .stat-top { font-size: 11px; }
+  .campus-personal #pending-count, .status-pill { font-size: 11px; }
+  .overview-request strong { font-size: 13px; }
+  .overview-request small, .overview-request p { font-size: 12px; }
+  .campus-book-info strong { font-size: 14px; }
+  .campus-book-info small, .campus-book-info > span { font-size: 12px; }
+  .campus-assistant-link strong { font-size: 13px; }
+  .campus-assistant-link small, .resource-shortcuts small, .campus-help > span { font-size: 12px; }
+  .campus-help strong { font-size: 13px; }
+  .primary-button, .text-button, .dashboard-search .primary-button { font-size: 12px; }
+  .dashboard-search input, input, select, textarea { font-size: 13px; }
+  .book-meta { font-size: 13px; }
+  .book-stock, .book-tags span, .book-actions small { font-size: 12px; }
+  .book-actions button { font-size: 12px; min-height: 38px; padding-inline: 9px; }
+  .book-actions > div { flex-wrap: wrap; }
+  .book-actions { flex-wrap: wrap; gap: 10px; }
+  .request-workspace { gap: 22px; }
+  .request-cart { min-height: 0; align-content: start; }
+  .request-cart-item strong { font-size: 14px; }
+  .request-cart-item small, .request-cart-item label, .request-note { font-size: 12px; }
+  .is-cart-empty .request-note, .is-cart-empty .request-submit { display: none; }
+  .is-cart-empty .request-cart { margin-top: 15px; }
+  .is-cart-empty .empty-state { padding: 15px 0 0; font-size: 13px; text-align: left; }
+  .is-cart-empty .empty-state .primary-button { display: flex; margin-top: 18px; width: max-content; }
+  .my-requests-panel .request-row { padding-block: 20px; gap: 10px; }
+  .request-row strong { font-size: 14px; }
+  .request-row > span, .request-row > small { font-size: 12px; line-height: 1.8; }
+  .request-row em.status-pill { font-size: 11px; }
+  .request-row em.status-pill.is-approved { background: #e2ebd5; color: #3c5c2f; }
+  .request-row em.status-pill.is-completed { background: #e8e9e0; color: #535b4c; }
+  .request-row em.status-pill.warning { background: #f5eacb; color: #735112; }
+  .request-row em.status-pill.danger { background: #f8e4dd; color: #a12f20; }
+  .room-filters { display: grid; grid-template-columns: minmax(150px,1.2fr) minmax(94px,.8fr) minmax(94px,.8fr) minmax(150px,1.1fr) minmax(100px,.8fr) auto; grid-template-areas: 'date-label start-label end-label type-label capacity-label .' 'date start end type capacity search'; gap: 7px 12px; align-items: end; }
+  .desktop-room-label, .desktop-room-context { position: static; width: auto; height: auto; margin: 0; padding: 0; overflow: visible; clip: auto; white-space: normal; }
+  .desktop-room-label { font-size: 12px; color: #4e5845; font-weight: 500; }
+  .desktop-room-label[for='room-date'] { grid-area: date-label; }
+  .desktop-room-label[for='room-start'] { grid-area: start-label; }
+  .desktop-room-label[for='room-end'] { grid-area: end-label; }
+  .desktop-room-label[for='room-type'] { grid-area: type-label; }
+  .desktop-room-label[for='room-capacity'] { grid-area: capacity-label; }
+  #room-date { grid-area: date; }
+  #room-start { grid-area: start; }
+  #room-end { grid-area: end; }
+  #room-type { grid-area: type; }
+  #room-capacity { grid-area: capacity; }
+  #room-search-button { grid-area: search; }
+  .room-filters input, .room-filters select { min-width: 0; width: 100%; }
+  .desktop-room-context { display: block; font-size: 13px; color: var(--muted); margin: -7px 0 24px; }
+  .desktop-room-context:empty { display: none; }
+  .room-card strong { font-size: 15px; }
+  .room-card small, .room-info span, .room-request-button { font-size: 12px; }
+  .equipment-row small, .equipment-actions .request-link { font-size: 12px; }
+  .study-chat-identity small, .study-context-panel > p, .study-composer-footer,
+  .study-book-toolbar, .study-book-option small, .study-current-scope { font-size: 12px; }
+  .study-modes button, #study-new, #study-book-search, #study-clear-books,
+  .study-suggestions strong, .study-suggestions span, .study-book-option strong,
+  .study-threads button { font-size: 12px; }
+  .study-welcome > p { font-size: 13px; }
+  .study-modes button { min-height: 36px; }
+  .study-book-toolbar { flex-wrap: wrap; }
+  .study-chat { min-height: 610px; }
+}
+@media (min-width: 1000px) and (max-width: 1279px) {
+  .room-filters { grid-template-columns: repeat(3,minmax(0,1fr)); grid-template-areas: 'date-label start-label end-label' 'date start end' 'type-label capacity-label .' 'type capacity search'; }
+  .campus-personal .stats-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
+}

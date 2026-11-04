@@ -1,0 +1,258 @@
+[
+  {
+    "table": "books",
+    "id": 7,
+    "path": "/uploads/covers/93e39686a281f3bec58f626b0ab2da11.png",
+    "source": "E:\\dhtriet\\OneDrive - ptit.edu.vn\\Desktop\\cơ sở dữ liệu.png",
+    "title": "Cơ sở dữ liệu"
+  },
+  {
+    "table": "books",
+    "id": 10,
+    "path": "/uploads/covers/39ad1c62f50e215c2cf870f00d53b7dd.jpg",
+    "source": "E:\\dhtriet\\OneDrive - ptit.edu.vn\\Desktop\\Database Application Development and Design.jpg",
+    "title": "Database Application Development and Design"
+  },
+  {
+    "table": "books",
+    "id": 11,
+    "path": "/uploads/covers/d0c45b0ad59a20a49daa75a335b4c627.jpg",
+    "source": "E:\\dhtriet\\OneDrive - ptit.edu.vn\\Desktop\\Database System Concepts.jpg",
+    "title": "Database System Concepts"
+  },
+  {
+    "table": "books",
+    "id": 12,
+    "path": "/uploads/covers/45051a140ed74041fdb89fc82e427c44.jpg",
+    "source": "E:\\dhtriet\\OneDrive - ptit.edu.vn\\Desktop\\The Design and Analysis of Computer Algorithms.jpg",
+    "title": "The Design and Analysis of Computer Algorithms"
+  },
+  {
+    "table": "books",
+    "id": 13,
+    "path": "/uploads/covers/4dcfc8565ea04ca64cd699e21a0d5e42.jpg",
+    "source": "E:\\dhtriet\\OneDrive - ptit.edu.vn\\Desktop\\cấu trúc dữ liệu và giải thuật.jpg",
+    "title": "Cấu trúc dữ liệu và giải thuật"
+  },
+  {
+    "table": "books",
+    "id": 15,
+    "path": "/uploads/covers/f7c84a2d64eaacc8929c5ae6750e060c.jpg",
+    "source": "E:\\dhtriet\\OneDrive - ptit.edu.vn\\Desktop\\giáo trình hệ điều hành.jpg",
+    "title": "Giáo trình Hệ điều hành"
+  },
+  {
+    "table": "books",
+    "id": 16,
+    "path": "/uploads/covers/2c56f81c09522474bf36a477c84b3729.png",
+    "source": "E:\\dhtriet\\OneDrive - ptit.edu.vn\\Desktop\\bài giảng lịch sử đảng cộng sản việt nam.png",
+    "title": "Bài giảng Lịch sử Đảng Cộng sản Việt Nam"
+  },
+  {
+    "table": "books",
+    "id": 22,
+    "path": "/uploads/covers/60de3d092861da592805b54de44f7481.jpg",
+    "source": "E:\\dhtriet\\OneDrive - ptit.edu.vn\\Desktop\\bài giảng xây dựng website thương mại điện tử.jpg",
+    "title": "Bài giảng Xây dựng Website thương mại điện tử"
+  },
+  {
+    "table": "books",
+    "id": 24,
+    "path": "/uploads/covers/5973698c20694cc48fd17c521fee2d32.jpg",
+    "source": "E:\\dhtriet\\OneDrive - ptit.edu.vn\\Desktop\\giáo trình cơ sở an toàn thông tin.jpg",
+    "title": "Giáo trình Cơ sở an toàn thông tin"
+  },
+  {
+    "table": "books",
+    "id": 25,
+    "path": "/uploads/covers/fe0524b95f672685caedf88a9c0e5b48.png",
+    "source": "E:\\dhtriet\\OneDrive - ptit.edu.vn\\Desktop\\giáo trình kỹ thuật đồ họa.png",
+    "title": "Giáo trình Kỹ thuật đồ họa"
+  },
+  {
+    "table": "books",
+    "id": 26,
+    "path": "/uploads/covers/3e174dc4eb16bacab149d08b31c85cc5.png",
+    "source": "E:\\dhtriet\\OneDrive - ptit.edu.vn\\Desktop\\kinh tế vi mô 1.png",
+    "title": "Kinh tế vi mô 1"
+  },
+  {
+    "table": "books",
+    "id": 27,
+    "path": "/uploads/covers/3aa54dbd22555f33771a8e06ddc619d4.jpg",
+    "source": "E:\\dhtriet\\OneDrive - ptit.edu.vn\\Desktop\\an toàn hệ điều hành.jpg",
+    "title": "An toàn hệ điều hành"
+  },
+  {
+    "table": "books",
+    "id": 28,
+    "path": "/uploads/covers/aac4a59604c2e5cf188c96a05482beb5.png",
+    "source": "E:\\dhtriet\\OneDrive - ptit.edu.vn\\Desktop\\Nhập môn công nghệ phần mềm.png",
+    "title": "Nhập môn Công nghệ phần mềm"
+  },
+  {
+    "table": "books",
+    "id": 29,
+    "path": "/uploads/covers/925ba6e81bc05f6fe3974992adf082fb.jpg",
+    "source": "E:\\dhtriet\\OneDrive - ptit.edu.vn\\Desktop\\An toàn và bảo mật hệ thống thông tin.jpg",
+    "title": "An toàn và bảo mật hệ thống thông tin"
+  },
+  {
+    "table": "books",
+    "id": 30,
+    "path": "/uploads/covers/98ae4828ef57be10aa023c76656919d3.jpg",
+    "source": "E:\\dhtriet\\OneDrive - ptit.edu.vn\\Desktop\\an toàn ứng dụng web và cơ sở dữ liệu.jpg",
+    "title": "An toàn ứng dụng web và cơ sở dữ liệu"
+  },
+  {
+    "table": "books",
+    "id": 31,
+    "path": "/uploads/covers/4635685b1c3f35d4afd765229736b132.jpg",
+    "source": "E:\\dhtriet\\OneDrive - ptit.edu.vn\\Desktop\\bài giảng các kỹ thuật giấu tin.jpg",
+    "title": "Bài giảng Các kỹ thuật giấu tin"
+  },
+  {
+    "table": "rooms",
+    "id": 1,
+    "path": "/uploads/resources/d1eb614100757b701ece289ff53c5785.jpg",
+    "source": "https://unsplash.com/photos/empty-classroom-khjwIW9HH5s",
+    "author": "Barry Zhou",
+    "license": "https://unsplash.com/license"
+  },
+  {
+    "table": "rooms",
+    "id": 2,
+    "path": "/uploads/resources/41f5dfa25e139b7cfea755a01de0ecf4.jpg",
+    "source": "https://unsplash.com/photos/white-chair-lot-J5XqX-qvEZE",
+    "author": "ål nik",
+    "license": "https://unsplash.com/license"
+  },
+  {
+    "table": "rooms",
+    "id": 3,
+    "path": "/uploads/resources/d1eb614100757b701ece289ff53c5785.jpg",
+    "source": "https://unsplash.com/photos/empty-classroom-khjwIW9HH5s",
+    "author": "Barry Zhou",
+    "license": "https://unsplash.com/license"
+  },
+  {
+    "table": "rooms",
+    "id": 4,
+    "path": "/uploads/resources/d1eb614100757b701ece289ff53c5785.jpg",
+    "source": "https://unsplash.com/photos/empty-classroom-khjwIW9HH5s",
+    "author": "Barry Zhou",
+    "license": "https://unsplash.com/license"
+  },
+  {
+    "table": "rooms",
+    "id": 5,
+    "path": "/uploads/resources/d1eb614100757b701ece289ff53c5785.jpg",
+    "source": "https://unsplash.com/photos/empty-classroom-khjwIW9HH5s",
+    "author": "Barry Zhou",
+    "license": "https://unsplash.com/license"
+  },
+  {
+    "table": "rooms",
+    "id": 6,
+    "path": "/uploads/resources/d1eb614100757b701ece289ff53c5785.jpg",
+    "source": "https://unsplash.com/photos/empty-classroom-khjwIW9HH5s",
+    "author": "Barry Zhou",
+    "license": "https://unsplash.com/license"
+  },
+  {
+    "table": "rooms",
+    "id": 7,
+    "path": "/uploads/resources/d1eb614100757b701ece289ff53c5785.jpg",
+    "source": "https://unsplash.com/photos/empty-classroom-khjwIW9HH5s",
+    "author": "Barry Zhou",
+    "license": "https://unsplash.com/license"
+  },
+  {
+    "table": "rooms",
+    "id": 8,
+    "path": "/uploads/resources/d1eb614100757b701ece289ff53c5785.jpg",
+    "source": "https://unsplash.com/photos/empty-classroom-khjwIW9HH5s",
+    "author": "Barry Zhou",
+    "license": "https://unsplash.com/license"
+  },
+  {
+    "table": "rooms",
+    "id": 9,
+    "path": "/uploads/resources/d1eb614100757b701ece289ff53c5785.jpg",
+    "source": "https://unsplash.com/photos/empty-classroom-khjwIW9HH5s",
+    "author": "Barry Zhou",
+    "license": "https://unsplash.com/license"
+  },
+  {
+    "table": "equipment",
+    "id": 2,
+    "path": "/uploads/resources/32ecccc7c54a2684a2ec9601f14671af.jpg",
+    "source": "https://unsplash.com/photos/an-electronic-device-with-a-micro-board-attached-to-it-3d2AY-7uyoI",
+    "author": "Vishnu Mohanan",
+    "license": "https://unsplash.com/license"
+  },
+  {
+    "table": "equipment",
+    "id": 5,
+    "path": "/uploads/resources/877d2f547fbcec6655ccd05e26b1ba7e.jpg",
+    "source": "https://unsplash.com/photos/black-laptop-computer-on-white-table-SM_hz_zkXxM",
+    "author": "Vadim Bozhko",
+    "license": "https://unsplash.com/license"
+  },
+  {
+    "table": "equipment",
+    "id": 7,
+    "path": "/uploads/resources/32ecccc7c54a2684a2ec9601f14671af.jpg",
+    "source": "https://unsplash.com/photos/an-electronic-device-with-a-micro-board-attached-to-it-3d2AY-7uyoI",
+    "author": "Vishnu Mohanan",
+    "license": "https://unsplash.com/license"
+  },
+  {
+    "table": "equipment",
+    "id": 9,
+    "path": "/uploads/resources/32ecccc7c54a2684a2ec9601f14671af.jpg",
+    "source": "https://unsplash.com/photos/an-electronic-device-with-a-micro-board-attached-to-it-3d2AY-7uyoI",
+    "author": "Vishnu Mohanan",
+    "license": "https://unsplash.com/license"
+  },
+  {
+    "table": "equipment",
+    "id": 1,
+    "path": "/uploads/resources/bc0da2b94bf2eb5fc09afabf0b4d1604.jpg",
+    "author": "Dylan Calluy",
+    "source": "https://unsplash.com/photos/black-and-white-projector-on-white-table-WU4ek4KCyjw",
+    "license": "https://unsplash.com/license"
+  },
+  {
+    "table": "equipment",
+    "id": 4,
+    "path": "/uploads/resources/b7a8efa7e8ef5402b7b553b406264ace.jpg",
+    "author": "Zoran Borojevic",
+    "source": "https://unsplash.com/photos/black-microphone-on-black-table-jFTZdPd5hyQ",
+    "license": "https://unsplash.com/license"
+  },
+  {
+    "table": "equipment",
+    "id": 3,
+    "path": "/uploads/resources/35c020ba4ac5167c9218dce375b19114.jpg",
+    "author": "Alexey Demidov",
+    "source": "https://www.pexels.com/photo/digital-multimeter-on-wooden-table-11872896/",
+    "license": "https://www.pexels.com/license/"
+  },
+  {
+    "table": "equipment",
+    "id": 6,
+    "path": "/uploads/resources/6a2240e6718175345ae47dd35c4f2662.jpg",
+    "author": "Sergei Starostin",
+    "source": "https://www.pexels.com/photo/close-up-photo-of-ethernet-cables-on-network-switch-6466143/",
+    "license": "https://www.pexels.com/license/"
+  },
+  {
+    "table": "equipment",
+    "id": 8,
+    "path": "/uploads/resources/177642564b1b62090b09fc936a7f9022.jpg",
+    "author": "Kawê Rodrigues",
+    "source": "https://www.pexels.com/photo/man-using-wacom-tablet-and-stylus-on-desk-16313656/",
+    "license": "https://www.pexels.com/license/"
+  }
+]

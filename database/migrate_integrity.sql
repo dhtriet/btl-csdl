@@ -1,0 +1,22 @@
+-- Generated from app/integrity.php. Back up first. Prefer the idempotent PHP migration runner.
+UPDATE loan_details SET return_status=IF(return_date>due_date,'late','on_time'),late_days=GREATEST(DATEDIFF(return_date,due_date),0),status='returned' WHERE return_date IS NOT NULL;
+UPDATE loan_details SET return_status=NULL,late_days=0,condition_on_return=NULL,status=IF(due_date<CURDATE(),'overdue','borrowed') WHERE return_date IS NULL;
+UPDATE equipment_loan_details SET return_status=IF(return_date>due_date,'late','on_time'),late_days=GREATEST(DATEDIFF(return_date,due_date),0),status='returned' WHERE return_date IS NOT NULL;
+UPDATE equipment_loan_details SET return_status=NULL,late_days=0,condition_on_return=NULL,status=IF(due_date<CURDATE(),'overdue','borrowed') WHERE return_date IS NULL;
+ALTER TABLE `books` ADD CONSTRAINT `chk_books_pages` CHECK (pages IS NULL OR pages > 0);
+ALTER TABLE `ebooks` ADD CONSTRAINT `chk_ebooks_size` CHECK (file_size_mb IS NULL OR file_size_mb > 0);
+ALTER TABLE `book_loan_request_items` ADD CONSTRAINT `chk_book_request_quantity` CHECK (quantity > 0);
+ALTER TABLE `equipment_loan_request_items` ADD CONSTRAINT `chk_equipment_request_quantity` CHECK (quantity > 0);
+ALTER TABLE `equipment` ADD CONSTRAINT `chk_equipment_quantities` CHECK (total_quantity > 0 AND available_quantity >= 0 AND available_quantity <= total_quantity);
+ALTER TABLE `rooms` ADD CONSTRAINT `chk_rooms_capacity` CHECK (capacity > 0);
+ALTER TABLE `room_requests` ADD CONSTRAINT `chk_room_request_time` CHECK (use_date >= '1000-01-01' AND start_time >= '00:00:00' AND start_time < end_time AND end_time <= '24:00:00');
+ALTER TABLE `extensions` ADD CONSTRAINT `chk_extensions_dates` CHECK (old_due_date >= '1000-01-01' AND new_due_date > old_due_date AND extension_date >= '1000-01-01');
+ALTER TABLE `loan_details` ADD CONSTRAINT `chk_loan_dates` CHECK (borrow_date >= '1000-01-01' AND due_date >= borrow_date AND (return_date IS NULL OR return_date >= borrow_date));
+ALTER TABLE `loan_details` ADD CONSTRAINT `chk_loan_extensions` CHECK (extension_count <= 3);
+ALTER TABLE `loan_details` ADD CONSTRAINT `chk_loan_return_state` CHECK ((return_date IS NULL AND status IN ('borrowed','overdue') AND return_status IS NULL AND late_days=0 AND condition_on_return IS NULL) OR (return_date IS NOT NULL AND status='returned' AND return_status IS NOT NULL AND condition_on_return IS NOT NULL AND CHAR_LENGTH(TRIM(condition_on_return))>0));
+ALTER TABLE `loan_details` ADD CONSTRAINT `chk_loan_return_result` CHECK (return_date IS NULL OR (late_days=GREATEST(DATEDIFF(return_date,due_date),0) AND return_status=IF(return_date>due_date,'late','on_time')));
+ALTER TABLE `equipment_loan_details` ADD CONSTRAINT `chk_equipment_loan_quantity` CHECK (quantity > 0);
+ALTER TABLE `equipment_loan_details` ADD CONSTRAINT `chk_equipment_loan_dates` CHECK (borrow_date >= '1000-01-01' AND due_date >= borrow_date AND (return_date IS NULL OR return_date >= borrow_date));
+ALTER TABLE `equipment_loan_details` ADD CONSTRAINT `chk_equipment_return_state` CHECK ((return_date IS NULL AND status IN ('borrowed','overdue') AND return_status IS NULL AND late_days=0 AND condition_on_return IS NULL) OR (return_date IS NOT NULL AND status='returned' AND return_status IS NOT NULL AND condition_on_return IS NOT NULL AND CHAR_LENGTH(TRIM(condition_on_return))>0));
+ALTER TABLE `equipment_loan_details` ADD CONSTRAINT `chk_equipment_return_result` CHECK (return_date IS NULL OR (late_days=GREATEST(DATEDIFF(return_date,due_date),0) AND return_status=IF(return_date>due_date,'late','on_time')));
+ALTER TABLE loan_details ADD COLUMN active_copy_id INT UNSIGNED GENERATED ALWAYS AS (CASE WHEN return_date IS NULL THEN copy_id ELSE NULL END) VIRTUAL, ADD UNIQUE KEY uq_loan_details_active_copy(active_copy_id);

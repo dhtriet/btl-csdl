@@ -1,0 +1,3 @@
+<?php
+require __DIR__.'/../app/config.php';require __DIR__.'/../app/database.php';require __DIR__.'/../scripts/lib/database-snapshot.php';
+$name=$argv[1]??'';if(!preg_match('/^resource_center_test_[0-9]+$/D',$name))throw new RuntimeException('Test target required');$p=Database::connection();$q=$p->prepare('SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=?');$q->execute([$name]);if($q->fetchColumn())throw new RuntimeException('Already exists');$snapshot=database_snapshot($p,sys_get_temp_dir().'/nexus-visibility-'.bin2hex(random_bytes(4)));$p->exec("CREATE DATABASE `$name` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");$p->exec("USE `$name`");$p->exec(file_get_contents($snapshot));echo "Cloned isolated test database $name\n";

@@ -1,0 +1,29 @@
+# Local credentials and sessions
+.env
+.env.*
+!.env.example
+/app/config.php
+/*cookie*.txt
+*.log
+
+# Runtime data, uploaded documents and private conversations
+uploads/
+/storage/*
+!/storage/ai-config.example.json
+!/storage/README.md
+
+# Local agent tooling and generated design evidence
+/.agents/
+/.codex/
+/.impeccable/*
+!/.impeccable/design.json
+
+# Dependencies, caches and test output
+node_modules/
+vendor/
+__pycache__/
+*.py[cod]
+.venv/
+/tests/output/
+.DS_Store
+Thumbs.db
