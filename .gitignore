@@ -2,7 +2,8 @@
 .env
 .env.*
 !.env.example
-/app/config.php
+# app/config.php is a credential-free environment-based runtime config.
+/app/config.local.php
 /*cookie*.txt
 *.log
 
