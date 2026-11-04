@@ -28,6 +28,12 @@ with tempfile.TemporaryFile() as archive:
             if item.is_dir():
                 continue
             name = Path(item.filename).name
+            if name == item.filename and name in ('books.sqlite', 'index-manifest.json'):
+                index_root = root.parent / 'assistant'
+                index_root.mkdir(parents=True, exist_ok=True)
+                with bundle.open(item) as source, (index_root / ('restored-' + name)).open('wb') as output:
+                    shutil.copyfileobj(source, output)
+                continue
             if name != item.filename or not name.lower().endswith('.pdf'):
                 raise SystemExit('Invalid ebook bundle entry')
             with bundle.open(item) as source:
