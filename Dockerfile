@@ -26,3 +26,5 @@ RUN sed -ri 's!/var/www/html!/var/www/html/public!g' \
 EXPOSE 80
 
 ENV NEXUS_PYTHON=python3
+
+CMD ["sh", "/var/www/html/scripts/docker-start.sh"]
