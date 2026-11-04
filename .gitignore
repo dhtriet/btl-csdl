@@ -15,6 +15,7 @@ uploads/
 # Local agent tooling and generated design evidence
 /.agents/
 /.codex/
+/.deploy/
 /.impeccable/*
 !/.impeccable/design.json
 
