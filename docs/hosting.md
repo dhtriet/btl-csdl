@@ -1,5 +1,19 @@
 # Bản web online
 
+## Render: PDF và chỉ mục trợ lý
+
+Render chạy Docker từ GitHub. Các PDF riêng được phục hồi lúc khởi động bằng
+`scripts/restore-ebooks.py`, với hai biến môi trường bí mật:
+`NEXUS_EBOOK_BUNDLE_URL` và `NEXUS_EBOOK_BUNDLE_TOKEN`.
+Nguồn hiện tại nằm trên Alwaysdata, yêu cầu Bearer token; archive và token nằm
+ngoài document root. Không thêm PDF hoặc token vào GitHub.
+
+`scripts/docker-start.sh` tải PDF trước khi mở Apache, sau đó lập chỉ mục ở nền.
+Trạng thái `pending` nghĩa là PDF đã có nhưng chỉ mục chưa hoàn tất. Khi container
+Free được tạo lại, quá trình này chạy lại. Nguồn archive hiện chứa 13 PDF; khi
+thêm sách mới cần cập nhật archive nguồn. Lịch sử chat trên filesystem Render
+chưa có lưu trữ bền vững.
+
 URL: https://csdl.alwaysdata.net/
 
 Ứng dụng chạy trên gói Alwaysdata Free của tài khoản hosting `csdl`, với PHP 8.4,
