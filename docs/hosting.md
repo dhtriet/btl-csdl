@@ -1,56 +1,31 @@
-# Bản web online
+# Triển khai Nexus trên Render
 
-## Render: PDF và chỉ mục trợ lý
+Web chính: [btl-csdl-onqi.onrender.com](https://btl-csdl-onqi.onrender.com/). Render lấy mã nguồn từ nhánh `main` của [dhtriet/btl-csdl](https://github.com/dhtriet/btl-csdl), build Docker PHP 8.2/Apache, document root `/var/www/html/public`.
 
-Render chạy Docker từ GitHub. Các PDF riêng được phục hồi lúc khởi động bằng
-`scripts/restore-ebooks.py`, với hai biến môi trường bí mật:
-`NEXUS_EBOOK_BUNDLE_URL` và `NEXUS_EBOOK_BUNDLE_TOKEN`.
-Nguồn hiện tại nằm trên Alwaysdata, yêu cầu Bearer token; archive và token nằm
-ngoài document root. Không thêm PDF hoặc token vào GitHub.
+## Cấu hình server
 
-`scripts/docker-start.sh` tải PDF trước khi mở Apache, sau đó lập chỉ mục ở nền.
-Trạng thái `pending` nghĩa là PDF đã có nhưng chỉ mục chưa hoàn tất. Khi container
-Free được tạo lại, quá trình này chạy lại. Nguồn archive hiện chứa 13 PDF; khi
-thêm sách mới cần cập nhật archive nguồn. Lịch sử chat trên filesystem Render
-chưa có lưu trữ bền vững.
+Các biến kết nối MySQL/MariaDB: `NEXUS_DB_HOST`, `NEXUS_DB_PORT`, `NEXUS_DB_NAME`, `NEXUS_DB_USER`, `NEXUS_DB_PASS`. Khóa trợ lý do server giữ trong `GROQ_API_KEY`; không đưa khóa vào frontend, Markdown hoặc ảnh minh họa. `app/config.php` trong Git chỉ đọc biến môi trường.
 
-URL: https://csdl.alwaysdata.net/
+CSDL được cung cấp riêng trên Alwaysdata. Quá trình triển khai Render không nạp seed hoặc ghi đè bằng database localhost.
 
-Ứng dụng chạy trên gói Alwaysdata Free của tài khoản hosting `csdl`, với PHP 8.4,
-Python 3 và MariaDB 11.8. Đây là địa chỉ con do hosting cấp; không cần giữ máy cá
-nhân bật để website hoạt động.
+## Nâng cấp nghiệp vụ mượn trả
 
-## Triển khai
+1. Sao lưu CSDL hosting và chuẩn bị các tệp của phiên bản mới.
+2. Chạy `php scripts/migrate-circulation.php --check` với cấu hình database hosting, sau đó `--apply` khi triển khai phiên bản này. Runner tạo snapshot riêng trước DDL và có thể chạy lại an toàn. Tệp `database/schema.sql` dành cho khởi tạo mới và có DROP TABLE; không chạy nó lên database đang có dữ liệu.
+3. Xác minh đủ bảng/cột/ràng buộc. Số dư chưa rõ nguyên nhân được đưa vào nhóm không khả dụng chờ kiểm kê; liên kết phiếu cũ chỉ khôi phục khi có bằng chứng duy nhất.
+4. Push mã nguồn lên GitHub, triển khai commit đó trên Render và kiểm tra phiên bản Live.
+5. Kiểm tra đăng nhập ba vai trò, danh mục, hồ sơ admin, đối soát, truy vết và trạng thái PDF/trợ lý. Kiểm thử có ghi dữ liệu phải dùng CSDL test riêng.
 
-- Source ở `/home/csdl/nexus`; document root phải là `/home/csdl/nexus/public/`.
-- `public/.htaccess` chuyển các URL API tới `index.php`; file tĩnh được phục vụ trực tiếp.
-- Database riêng: `csdl_nexus`. Khởi tạo từ schema/seed demo, không đưa database local lên.
-- PDF ở `storage/ebooks`, ngoài document root, chỉ đọc qua endpoint kiểm tra đăng nhập.
-- Ảnh bìa và ảnh minh họa được giữ từ source và áp dụng theo manifest.
-- HTTP tự chuyển HTTPS. Cookie phiên dùng Secure, HttpOnly và SameSite=Lax.
+Schema mới có 26 bảng. [Từ điển](database-schema.md) và [ERD](database-erd.mmd) được sinh từ cùng metadata bằng `php scripts/document-schema.php`. [Tài liệu chuẩn hóa](normalization.md) ghi rõ các thuộc tính suy diễn và phi chuẩn hóa được kiểm soát.
 
-## Thông tin riêng
+## PDF và chỉ mục trợ lý
 
-Mật khẩu kết nối không nằm trong Git. Trên hosting, `app/config.php` đọc cấu hình
-riêng trong `storage/database.json`; file này chỉ chủ tài khoản đọc được.
+PDF riêng được phục hồi lúc container khởi động bằng `scripts/restore-ebooks.py`, với hai biến bí mật `NEXUS_EBOOK_BUNDLE_URL` và `NEXUS_EBOOK_BUNDLE_TOKEN`. Nguồn archive nằm trên Alwaysdata, xác thực bằng Bearer token, ngoài document root. Không thêm PDF hay token vào GitHub.
 
-Tài khoản online dùng mật khẩu riêng thay cho mật khẩu demo công khai. Thông tin
-truy cập lưu cục bộ tại `.deploy/website-logins.json`, bị Git bỏ qua. Database và
-tài khoản local giữ nguyên.
+`scripts/docker-start.sh` tải PDF trước khi mở Apache rồi khôi phục/lập chỉ mục ở nền. Archive chứa 13 PDF cùng chỉ mục đã chuẩn bị; khi thêm sách cần cập nhật archive nguồn và ánh xạ chỉ mục. Lịch sử chat và upload phát sinh trên filesystem Render cần lưu trữ bền vững để giữ qua lần tạo lại container.
 
-SSH dùng khóa triển khai riêng trên máy đã được chủ tài khoản cho phép. Chỉ public
-key được thêm vào Alwaysdata; private key không tải lên hosting hoặc GitHub.
+`.dockerignore` loại các cấu hình riêng, cache, phiên và PDF khỏi Docker build cục bộ. Git chứa mã nguồn, dữ liệu demo SQL và các ảnh tài nguyên được chọn; ảnh README nằm trong `docs/images`.
 
-## Trợ lý học tập
+## Kiểm thử
 
-Python và thư viện đọc PDF đã được cài trên hosting. Chưa sao chép khóa API AI từ
-máy local lên; AI vẫn ở trạng thái chưa cấu hình. Chủ tài khoản có thể thêm cấu
-hình riêng `storage/ai-config.json` trên hosting để bật, dùng `python3` thay cho
-đường dẫn Python Windows. Không commit file này vào Git.
-
-## Kiểm tra sau triển khai
-
-Đã xác minh HTTPS, chuyển hướng HTTP, đăng nhập ba vai trò, dashboard, danh mục,
-phòng, thiết bị và trạng thái trợ lý qua API. Kiểm tra trình duyệt xác nhận giao
-diện online và đăng nhập hoạt động. Tệp cấu hình riêng và dữ liệu chạy không được
-đưa vào repository.
+`tests/circulation.py` kiểm tra API và tranh chấp thiết bị cuối qua hai server độc lập. `tests/schema-circulation.php` kiểm tra khởi tạo, migration chạy lại và FK/UNIQUE/CHECK. `tests/circulation-ui.cjs` kiểm tra thứ tự phản hồi bất đồng bộ. Xem [hướng dẫn](../tests/README.md).

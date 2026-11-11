@@ -1,6 +1,6 @@
 const management = { type: 'books', page: 1, search: '', visibility: 'all', serial: 0, record: null, options: { publishers: [], books: [] } };
 const managementLabels = { books: 'Đầu sách', copies: 'Bản sách', rooms: 'Phòng học', equipment: 'Thiết bị' };
-const resourceStatuses = { available:'Sẵn sàng', borrowed:'Đang mượn', maintenance:'Bảo trì', inactive:'Tạm ngừng', damaged:'Hư hỏng', lost:'Thất lạc', good:'Tốt', worn:'Cũ', classroom:'Phòng học', meeting_room:'Phòng họp' };
+const resourceStatuses = { available:'Sẵn sàng', borrowed:'Đang mượn', unavailable:'Không khả dụng', maintenance:'Bảo trì', inactive:'Tạm ngừng', damaged:'Hư hỏng', lost:'Thất lạc', good:'Tốt', worn:'Cũ', classroom:'Phòng học', meeting_room:'Phòng họp' };
 const managementFields = {
   books: [
     ['title','Tên sách','text',true,240], ['publisher_id','Nhà xuất bản','publishers',true],
@@ -24,7 +24,7 @@ const managementFields = {
     ['name','Tên thiết bị','text',true,160], ['equipment_type','Loại thiết bị','text',true,100],
     ['manufacturer','Hãng sản xuất','text',false,120], ['total_quantity','Tổng số lượng','number',true,1000000,1],
     ['storage_location','Vị trí lưu trữ','text',false,160], ['serial_number','Số serial','text',false,120],
-    ['status','Tình trạng hoạt động','enum',true,['available','borrowed','maintenance','damaged']],
+    ['status','Tình trạng hoạt động','enum',true,['available','borrowed','maintenance','damaged','unavailable']],
     ['description','Mô tả','textarea'], ['usage_guide','Hướng dẫn sử dụng','textarea'],
   ],
 };

@@ -1,0 +1,280 @@
+erDiagram
+    accounts {
+        int id PK
+        varchar username UK
+        varchar password
+        varchar full_name
+        date date_of_birth
+        varchar email
+        varchar phone
+        varchar address
+        datetime registered_at
+        enum role
+    }
+    authors {
+        int id PK
+        varchar full_name
+        date date_of_birth
+        varchar nationality
+        text biography
+    }
+    book_authors {
+        int book_id PK,FK
+        int author_id PK,FK
+    }
+    book_copies {
+        int id PK
+        int book_id FK
+        varchar barcode UK
+        varchar storage_location
+        enum condition_status
+        enum status
+        tinyint is_visible
+        datetime deleted_at
+    }
+    book_genres {
+        int book_id PK,FK
+        int genre_id PK,FK
+    }
+    book_keywords {
+        int book_id PK,FK
+        int keyword_id PK,FK
+    }
+    book_loan_request_items {
+        int id PK
+        int request_id FK
+        int book_id FK
+        int quantity
+        date requested_due_date
+    }
+    book_loan_requests {
+        int id PK
+        int student_id FK
+        int librarian_id FK
+        datetime requested_at
+        varchar note
+        enum status
+        datetime reviewed_at
+        varchar review_note
+        enum source
+    }
+    books {
+        int id PK
+        varchar title
+        year publication_year
+        varchar language
+        text summary
+        int pages
+        varchar cover_image
+        text description
+        int publisher_id FK
+        tinyint is_visible
+        datetime deleted_at
+    }
+    ebooks {
+        int id PK
+        int book_id UK,FK
+        varchar file_format
+        decimal file_size_mb
+        varchar resolution
+        varchar file_path
+    }
+    equipment {
+        int id PK
+        varchar name
+        varchar equipment_type
+        varchar manufacturer
+        text description
+        text usage_guide
+        int total_quantity
+        int available_quantity
+        varchar storage_location
+        varchar serial_number
+        enum status
+        tinyint is_visible
+        datetime deleted_at
+        varchar image_path
+        tinyint image_is_illustration
+        int unavailable_quantity
+        datetime inventory_verified_at
+    }
+    equipment_inventory_adjustments {
+        int id PK
+        int equipment_id FK
+        int actor_account_id FK
+        enum event_type
+        int old_total
+        int old_available
+        int old_unavailable
+        int new_total
+        int new_available
+        int new_unavailable
+        int on_loan_quantity
+        varchar reason
+        datetime created_at
+        int opening_equipment_id UK
+    }
+    equipment_loan_details {
+        int id PK
+        int loan_id FK
+        int equipment_id FK
+        int quantity
+        date borrow_date
+        date due_date
+        date return_date
+        enum return_status
+        smallint late_days
+        varchar condition_on_borrow
+        varchar condition_on_return
+        enum status
+    }
+    equipment_loan_request_items {
+        int id PK
+        int request_id FK
+        int equipment_id FK
+        int quantity
+        date requested_due_date
+    }
+    equipment_loan_requests {
+        int id PK
+        int student_id FK
+        int librarian_id FK
+        datetime requested_at
+        varchar note
+        enum status
+        datetime reviewed_at
+        varchar review_note
+        enum source
+    }
+    equipment_loans {
+        int id PK
+        int student_id FK
+        int librarian_id FK
+        datetime registered_at
+        varchar note
+        enum status
+        int request_id UK,FK
+    }
+    extensions {
+        int id PK
+        int loan_detail_id FK
+        int librarian_id FK
+        date old_due_date
+        date new_due_date
+        date extension_date
+    }
+    genres {
+        int id PK
+        varchar name UK
+        varchar description
+    }
+    keywords {
+        int id PK
+        varchar name UK
+    }
+    librarians {
+        int id PK
+        int account_id UK,FK
+        varchar librarian_code UK
+    }
+    loan_details {
+        int id PK
+        int receipt_id FK
+        int copy_id FK
+        date borrow_date
+        date due_date
+        date return_date
+        enum return_status
+        smallint late_days
+        tinyint extension_count
+        enum status
+        enum condition_on_return
+        int active_copy_id UK
+    }
+    loan_receipts {
+        int id PK
+        int student_id FK
+        int librarian_id FK
+        datetime registered_at
+        varchar note
+        enum status
+        int request_id UK,FK
+    }
+    publishers {
+        int id PK
+        varchar name
+        varchar address
+        varchar email
+        varchar phone
+    }
+    room_requests {
+        int id PK
+        int student_id FK
+        int room_id FK
+        int librarian_id FK
+        date use_date
+        time start_time
+        time end_time
+        varchar purpose
+        enum status
+        datetime created_at
+        datetime reviewed_at
+        varchar review_note
+    }
+    rooms {
+        int id PK
+        varchar name
+        enum room_type
+        varchar location
+        int capacity
+        varchar included_equipment
+        varchar operating_hours
+        enum status
+        tinyint is_visible
+        datetime deleted_at
+        varchar image_path
+        tinyint image_is_illustration
+    }
+    students {
+        int id PK
+        int account_id UK,FK
+        varchar student_code UK
+        varchar faculty
+        varchar class_name
+    }
+    authors ||--o{ book_authors : author_id
+    books ||--o{ book_authors : book_id
+    books ||--o{ book_copies : book_id
+    books ||--o{ book_genres : book_id
+    genres ||--o{ book_genres : genre_id
+    books ||--o{ book_keywords : book_id
+    keywords ||--o{ book_keywords : keyword_id
+    books ||--o{ book_loan_request_items : book_id
+    book_loan_requests ||--o{ book_loan_request_items : request_id
+    librarians o|--o{ book_loan_requests : librarian_id
+    students ||--o{ book_loan_requests : student_id
+    publishers ||--o{ books : publisher_id
+    books ||--o| ebooks : book_id
+    accounts o|--o{ equipment_inventory_adjustments : actor_account_id
+    equipment ||--o{ equipment_inventory_adjustments : equipment_id
+    equipment ||--o{ equipment_loan_details : equipment_id
+    equipment_loans ||--o{ equipment_loan_details : loan_id
+    equipment ||--o{ equipment_loan_request_items : equipment_id
+    equipment_loan_requests ||--o{ equipment_loan_request_items : request_id
+    librarians o|--o{ equipment_loan_requests : librarian_id
+    students ||--o{ equipment_loan_requests : student_id
+    librarians ||--o{ equipment_loans : librarian_id
+    equipment_loan_requests o|--o| equipment_loans : request_id
+    students ||--o{ equipment_loans : student_id
+    loan_details ||--o{ extensions : loan_detail_id
+    librarians ||--o{ extensions : librarian_id
+    accounts ||--o| librarians : account_id
+    book_copies ||--o{ loan_details : copy_id
+    loan_receipts ||--o{ loan_details : receipt_id
+    librarians ||--o{ loan_receipts : librarian_id
+    book_loan_requests o|--o| loan_receipts : request_id
+    students ||--o{ loan_receipts : student_id
+    librarians o|--o{ room_requests : librarian_id
+    rooms ||--o{ room_requests : room_id
+    students ||--o{ room_requests : student_id
+    accounts ||--o| students : account_id

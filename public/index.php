@@ -13,6 +13,7 @@ require_once __DIR__ . '/../app/helpers.php';
 require_once __DIR__ . '/../app/resources.php';
 require_once __DIR__ . '/../app/queries/books.php';
 require_once __DIR__ . '/../app/assistant.php';
+require_once __DIR__ . '/../app/circulation.php';
 
 final class ApiException extends RuntimeException
 {
@@ -67,6 +68,8 @@ function route_api(PDO $pdo, string $method, array $segments): void
     }
     if ($resource === 'assistant') route_assistant($pdo,$method,$id);
     if ($resource === 'manage') manage_resources($pdo,$method,$id,$childId);
+    if ($resource === 'circulation') route_circulation($pdo, $method, $id, $childId, $action);
+    if ($resource === 'accounts' && $id !== null && ctype_digit($id) && $method === 'GET') json_response(['data'=>account_full_detail($pdo, (int)$id)]);
     if ($method === 'GET' && (
         in_array($resource,['overdue-books','overdue-students','stats'],true)
         || ($resource==='books' && in_array($id,['overdue','returned'],true))
@@ -950,7 +953,8 @@ function review_borrow_request(PDO $pdo, string $type, int $requestId): array
 
 function review_book_request(PDO $pdo, int $requestId, int $librarianId, string $decision, ?string $reviewNote): array
 {
-    $pdo->beginTransaction();
+    $ownsTransaction = !$pdo->inTransaction();
+    if ($ownsTransaction) $pdo->beginTransaction();
     try {
         $request = $pdo->prepare('SELECT * FROM book_loan_requests WHERE id = :id FOR UPDATE');
         $request->execute(['id' => $requestId]);
@@ -969,7 +973,7 @@ function review_book_request(PDO $pdo, int $requestId, int $librarianId, string 
                  WHERE id = :id"
             );
             $update->execute(['librarian_id' => $librarianId, 'review_note' => $reviewNote, 'id' => $requestId]);
-            $pdo->commit();
+            if ($ownsTransaction) $pdo->commit();
             return ['id' => $requestId, 'type' => 'book', 'status' => 'rejected'];
         }
 
@@ -1007,11 +1011,11 @@ function review_book_request(PDO $pdo, int $requestId, int $librarianId, string 
         }
 
         $receipt = $pdo->prepare(
-            "INSERT INTO loan_receipts (student_id, librarian_id, note, status)
-             VALUES (:student_id, :librarian_id, :note, 'open')"
+            "INSERT INTO loan_receipts (student_id, librarian_id, note, status, request_id)
+             VALUES (:student_id, :librarian_id, :note, 'open', :request_id)"
         );
         $receiptNote = substr(trim('Duyet yeu cau sach #' . $requestId . ' ' . (string) $header['note']), 0, 255);
-        $receipt->execute(['student_id' => $header['student_id'], 'librarian_id' => $librarianId, 'note' => $receiptNote]);
+        $receipt->execute(['student_id' => $header['student_id'], 'librarian_id' => $librarianId, 'note' => $receiptNote, 'request_id'=>$requestId]);
         $receiptId = (int) $pdo->lastInsertId();
 
         $loanDetail = $pdo->prepare(
@@ -1030,10 +1034,10 @@ function review_book_request(PDO $pdo, int $requestId, int $librarianId, string 
              WHERE id = :id"
         );
         $update->execute(['librarian_id' => $librarianId, 'review_note' => $reviewNote, 'id' => $requestId]);
-        $pdo->commit();
+        if ($ownsTransaction) $pdo->commit();
         return ['id' => $requestId, 'type' => 'book', 'status' => 'approved', 'receipt_id' => $receiptId];
     } catch (Throwable $exception) {
-        if ($pdo->inTransaction()) {
+        if ($ownsTransaction && $pdo->inTransaction()) {
             $pdo->rollBack();
         }
         throw $exception;
@@ -1042,7 +1046,8 @@ function review_book_request(PDO $pdo, int $requestId, int $librarianId, string 
 
 function review_equipment_request(PDO $pdo, int $requestId, int $librarianId, string $decision, ?string $reviewNote): array
 {
-    $pdo->beginTransaction();
+    $ownsTransaction = !$pdo->inTransaction();
+    if ($ownsTransaction) $pdo->beginTransaction();
     try {
         $request = $pdo->prepare('SELECT * FROM equipment_loan_requests WHERE id = :id FOR UPDATE');
         $request->execute(['id' => $requestId]);
@@ -1061,7 +1066,7 @@ function review_equipment_request(PDO $pdo, int $requestId, int $librarianId, st
                  WHERE id = :id"
             );
             $update->execute(['librarian_id' => $librarianId, 'review_note' => $reviewNote, 'id' => $requestId]);
-            $pdo->commit();
+            if ($ownsTransaction) $pdo->commit();
             return ['id' => $requestId, 'type' => 'equipment', 'status' => 'rejected'];
         }
 
@@ -1094,11 +1099,11 @@ function review_equipment_request(PDO $pdo, int $requestId, int $librarianId, st
         }
 
         $loan = $pdo->prepare(
-            "INSERT INTO equipment_loans (student_id, librarian_id, note, status)
-             VALUES (:student_id, :librarian_id, :note, 'borrowed')"
+            "INSERT INTO equipment_loans (student_id, librarian_id, note, status, request_id)
+             VALUES (:student_id, :librarian_id, :note, 'borrowed', :request_id)"
         );
         $loanNote = substr(trim('Duyet yeu cau thiet bi #' . $requestId . ' ' . (string) $header['note']), 0, 255);
-        $loan->execute(['student_id' => $header['student_id'], 'librarian_id' => $librarianId, 'note' => $loanNote]);
+        $loan->execute(['student_id' => $header['student_id'], 'librarian_id' => $librarianId, 'note' => $loanNote, 'request_id'=>$requestId]);
         $loanId = (int) $pdo->lastInsertId();
 
         $loanDetail = $pdo->prepare(
@@ -1128,10 +1133,10 @@ function review_equipment_request(PDO $pdo, int $requestId, int $librarianId, st
              WHERE id = :id"
         );
         $update->execute(['librarian_id' => $librarianId, 'review_note' => $reviewNote, 'id' => $requestId]);
-        $pdo->commit();
+        if ($ownsTransaction) $pdo->commit();
         return ['id' => $requestId, 'type' => 'equipment', 'status' => 'approved', 'loan_id' => $loanId];
     } catch (Throwable $exception) {
-        if ($pdo->inTransaction()) {
+        if ($ownsTransaction && $pdo->inTransaction()) {
             $pdo->rollBack();
         }
         throw $exception;
@@ -1633,7 +1638,7 @@ function student_history(PDO $pdo, string $studentCode): array
 function loan_receipt_detail(PDO $pdo, int $receiptId): array
 {
     $receipt = $pdo->prepare(
-        "SELECT lr.id, lr.registered_at, lr.status, lr.note,
+        "SELECT lr.id, lr.request_id, lr.registered_at, lr.status, lr.note,
                 s.student_code, sa.full_name AS student_name,
                 l.librarian_code, la.full_name AS librarian_name
          FROM loan_receipts lr

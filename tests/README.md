@@ -1,5 +1,15 @@
 # Regression tests
 
+## Circulation extension
+
+After cloning a dedicated test database and running `php scripts/migrate-circulation.php --apply` against that test database, run `python tests/circulation.py` with the same `NEXUS_DB_*` environment. It starts hidden PHP servers on ports 8014/8015 and tests role/CSRF enforcement, full admin profiles, atomic multi-item counter loans, online-to-receipt links, ownership, returns, inventory reconciliation, stale versions, audit logging and two sessions competing for the last equipment unit. It only accepts `resource_center_test_<digits>`. Fixtures remain in that test database. The JSON result and server log are written under ignored `tests/output/`. Optional `NEXUS_TEST_PASS` changes the demo login password for this test.
+
+`php tests/schema-circulation.php` creates a new database named `resource_center_test_<timestamp><random>` (refusing an existing name), loads the actual schema/seed, runs the migration twice, verifies inventory balances, and directly checks the new FK, UNIQUE and CHECK protections. It leaves this isolated database for inspection. The local database user therefore needs permission to create test databases. `docs/teacher-demo.sql` contains read-only demonstration queries for Workbench.
+
+`node tests/circulation-ui.cjs` checks the shipped asynchronous inventory/trace renderers with reversed success/error responses and sign-out invalidation. It uses an isolated mocked DOM and deferred API promises; it does not access the browser or database.
+
+## Existing regression suite
+
 Tests create and edit fixtures only in a dedicated MySQL database named
 `resource_center_test_<digits>`. They refuse to run without that explicit name.
 The test database is disposable; never point this runner at the working database.

@@ -12,6 +12,8 @@
   <link rel="stylesheet" href="/assets/campus-desktop.css?v=desktop-1">
   <link rel="stylesheet" href="/assets/learning-kit.css?v=kit-2">
   <link rel="stylesheet" href="/assets/resource-gallery.css?v=1">
+  <link rel="stylesheet" href="/assets/pink-glam.css?v=glam-2">
+  <link rel="stylesheet" href="/assets/circulation-desk.css?v=1">
 </head>
 <body>
   <svg class="icon-sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs><symbol id="icon-dashboard" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol><symbol id="icon-catalog" viewBox="0 0 24 24"><path d="M12 5v16M3 4c3-1 6-1 9 1 3-2 6-2 9-1v15c-3-1-6-1-9 2-3-3-6-3-9-2Z"/></symbol><symbol id="icon-requests" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M8 10h8M8 14h8M8 18h5"/></symbol><symbol id="icon-circulation" viewBox="0 0 24 24"><path d="M3 7h17l-4-4M21 17H4l4 4M20 7l-4 4M4 17l4-4"/></symbol><symbol id="icon-spaces" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 11h18M8 15h2M14 15h2"/></symbol><symbol id="icon-equipment" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></symbol><symbol id="icon-approvals" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol><symbol id="icon-reports" viewBox="0 0 24 24"><path d="M4 3v18h17M9 16v-5M14 16V7M19 16v-8"/></symbol><symbol id="icon-admin" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 5"/></symbol><symbol id="icon-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol><symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol><symbol id="icon-logout" viewBox="0 0 24 24"><path d="M9 4H4v16h5M9 12h12m-4-4 4 4-4 4"/></symbol></defs></svg>
@@ -143,6 +145,8 @@
           <div><h1 id="circulation-heading">Mượn và trả</h1><p>Mỗi cuốn trong một phiếu có hạn trả và lịch sử riêng.</p></div>
           <div class="lookup-box"><label for="student-history-code">Mã sinh viên</label><div><input id="student-history-code" placeholder="SV001"><button id="student-history-button" class="primary-button compact">Tra cứu</button></div></div>
         </div>
+        <details id="counter-desk" class="panel desk-disclosure is-hidden"><summary><strong>Lập phiếu mượn tại quầy</strong><span>Thủ thư chọn sinh viên và giao sách hoặc thiết bị trực tiếp.</span></summary><form id="counter-loan-form" class="stack-form desk-form"><div class="desk-fields"><label>Sinh viên<select id="counter-reader" name="student_code" required><option value="">Chọn sinh viên</option></select></label><label>Loại tài nguyên<select id="counter-type" name="type"><option value="book">Sách</option><option value="equipment">Thiết bị</option></select></label></div><div id="counter-items"></div><button id="counter-add" class="text-button" type="button">Thêm tài nguyên +</button><label>Ghi chú giao tài nguyên<textarea name="note" maxlength="255" rows="2"></textarea></label><p class="muted">Xác nhận sẽ tạo yêu cầu tại quầy, phiếu mượn và cập nhật tồn kho trong cùng một giao dịch. Bạn có thể lập một phiếu gồm nhiều tài nguyên cùng loại.</p><div id="counter-result" role="status" aria-live="polite"></div><button class="primary-button" type="submit">Lập phiếu & giao tài nguyên</button></form></details>
+        <article class="panel trace-panel"><div class="panel-heading"><div><h2>Truy vết yêu cầu và phiếu mượn</h2><p>Xem phiếu được tạo từ yêu cầu và từng tài nguyên đã giao.</p></div></div><form id="request-trace-form" class="desk-fields"><label>Loại yêu cầu<select name="type"><option value="book">Mượn sách</option><option value="equipment">Mượn thiết bị</option></select></label><label>Mã yêu cầu<input name="request_id" type="number" min="1" step="1" required placeholder="Ví dụ: 9"></label><button class="primary-button compact" type="submit">Truy vết</button></form><div id="request-trace-result" aria-live="polite"></div></article>
         <div class="dashboard-grid circulation-grid">
           <article class="panel panel-wide"><div class="panel-heading"><div><h2>Sách cần xử lý</h2></div><span class="panel-badge danger">Ưu tiên quá hạn lâu</span></div><div id="overdue-books-table" class="table-wrap"></div></article>
           <article class="panel"><div class="panel-heading"><div><h2>Lịch sử gần đây</h2></div></div><div id="returned-books-list" class="compact-list"></div></article>
@@ -205,6 +209,7 @@
 
       <section id="view-manage" class="page-view" aria-labelledby="management-heading">
         <div class="section-intro"><div><h1 id="management-heading">Quản lý tài nguyên</h1><p>Quản lý thông tin, hình ảnh và hiển thị của tài nguyên.</p></div><button id="management-add" class="primary-button" type="button">Thêm đầu sách</button></div>
+        <article class="panel"><div class="panel-heading"><div><h2>Đối soát tồn kho thiết bị</h2><p>Phân biệt sẵn sàng, đang mượn và không khả dụng; giữ lịch sử điều chỉnh.</p></div><button id="inventory-load" type="button" class="text-button">Mở đối soát</button></div><div id="inventory-workspace" class="is-hidden"><p class="muted">Tổng = Sẵn sàng + Đang mượn + Không khả dụng. Các số dư cũ chưa rõ nguyên nhân được đánh dấu chờ kiểm kê.</p><div id="inventory-list" class="table-wrap"></div><div id="inventory-editor"></div></div></article>
         <div id="management-tabs" class="management-tabs" role="group" aria-label="Loại tài nguyên"><button data-resource-type="books" class="is-active" aria-pressed="true">Đầu sách</button><button data-resource-type="copies" aria-pressed="false">Bản sách</button><button data-resource-type="rooms" aria-pressed="false">Phòng học</button><button data-resource-type="equipment" aria-pressed="false">Thiết bị</button></div>
         <p class="management-help">Đầu sách lưu tên, tác giả và ảnh bìa. Bản sách là từng cuốn có mã vạch để mượn trả: một đầu sách có thể có nhiều bản sách.</p><article class="panel"><div class="management-toolbar"><form id="management-search-form"><label class="sr-only" for="management-search">Tìm tên hoặc mã vạch</label><input id="management-search" placeholder="Tìm tên hoặc mã vạch…" autocomplete="off"><button class="primary-button compact" type="submit">Tìm kiếm</button></form><div><label for="management-visibility">Hiển thị </label><select id="management-visibility"><option value="all">Tất cả</option><option value="1">Hiện</option><option value="0">Đã ẩn</option></select><span id="management-count"></span><button id="management-reload" class="text-button" type="button">Tải lại</button></div></div><div id="management-table" class="table-wrap"></div><nav id="management-pagination" class="catalog-pagination" aria-label="Phân trang quản lý tài nguyên"></nav></article>
       </section>
@@ -212,6 +217,7 @@
       <section id="view-admin" class="page-view">
         <div class="section-intro"><div><h1>Quản lý tài khoản</h1><p>Danh sách tài khoản và thông tin liên hệ cơ bản.</p></div></div>
         <article class="panel"><div class="panel-heading"><div><h2>Danh sách tài khoản</h2></div><span class="panel-badge">Thông tin tài khoản</span></div><div id="account-table" class="table-wrap"></div></article>
+        <article id="account-full-panel" class="panel is-hidden" aria-labelledby="account-full-heading"><div class="panel-heading"><h2 id="account-full-heading" tabindex="-1">Chi tiết tài khoản</h2><button id="account-full-close" class="text-button" type="button">Đóng chi tiết</button></div><div id="account-full-content"></div></article>
       </section>
     </main>
   </div>
@@ -255,5 +261,7 @@
   <script src="/assets/learning-kit.js?v=kit-3"></script>
   <script src="/assets/manage.js?v=visibility-2"></script>
   <script src="/assets/app.js?v=visibility-2-kit-1"></script>
+  <script src="/assets/circulation-desk.js?v=1"></script>
+  <script type="module" src="/assets/pink-glam-init.js?v=glam-2"></script>
 </body>
 </html>

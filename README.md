@@ -1,6 +1,43 @@
 # Nexus Learning Resource Center
 
-Web online: **https://csdl.alwaysdata.net/** — [cấu hình hosting](docs/hosting.md).
+**Một nơi cho mọi điều bạn muốn học.** Tra cứu sách, mượn thiết bị, đặt không gian học tập và học cùng trợ lý Nexus.
+
+[![Website](https://img.shields.io/badge/Website-Xem_demo-D81B60?style=for-the-badge)](https://btl-csdl-onqi.onrender.com/)
+[![PHP](https://img.shields.io/badge/PHP-8.2-777BB4?style=for-the-badge&logo=php&logoColor=white)](Dockerfile)
+[![Database](https://img.shields.io/badge/CSDL-26_bảng-AD1457?style=for-the-badge)](docs/database-schema.md)
+
+![Nexus — Pink Glam dashboard](docs/images/dashboard-pink-glam.png)
+
+## Khám phá Nexus
+
+| Dành cho sinh viên | Dành cho thủ thư và quản trị |
+|---|---|
+| Tìm sách, xem bìa và đọc PDF | Duyệt yêu cầu, cấp phát bản sách, nhận trả và gia hạn |
+| Gửi yêu cầu mượn, đặt phòng, theo dõi lịch sử | Lập phiếu trực tiếp tại quầy cho sinh viên |
+| Trợ lý học tập và bộ học liệu theo mục tiêu | Đối soát thiết bị và xem nhật ký điều chỉnh |
+| Xem tài nguyên và trạng thái thực tế | Xem hồ sơ tài khoản, báo cáo và truy vết yêu cầu–phiếu |
+
+<table>
+  <tr>
+    <td width="50%"><strong>Lập phiếu tại quầy</strong><br><br><a href="docs/images/counter-lending.png"><img src="docs/images/counter-lending.png" alt="Thủ thư chọn sinh viên, nhiều tài nguyên và hạn trả từng dòng"></a></td>
+    <td width="50%"><strong>Truy vết rõ ràng</strong><br><br><a href="docs/images/request-trace.png"><img src="docs/images/request-trace.png" alt="Yêu cầu liên kết phiếu mượn và từng mã bản sách đã cấp"></a></td>
+  </tr>
+</table>
+
+Giao diện **Pink Glam / Y2K Sparkle** có nền hồng kem, kính mờ, trái tim bóng, bụi sao và hiệu ứng tương tác. Nút ngôi sao cho phép tắt chuyển động; hệ thống hỗ trợ tùy chọn giảm chuyển động của thiết bị. Ảnh trên chụp từ bản desktop với dữ liệu demo.
+
+**Tài liệu để tìm hiểu và bảo vệ đồ án:** [Nghiệp vụ & chuẩn hóa](docs/normalization.md) · [Từ điển CSDL](docs/database-schema.md) · [ERD](docs/database-erd.mmd) · [SQL demo](docs/teacher-demo.sql) · [Triển khai](docs/hosting.md)
+
+## Bổ sung nghiệp vụ và mô hình CSDL — 10/11/2026
+
+- Admin: Quản trị → Xem chi tiết tài khoản để xem liên hệ, hồ sơ sinh viên/thủ thư và lịch sử liên quan.
+- Thủ thư: Mượn & trả → Lập phiếu mượn tại quầy (nhiều sách hoặc nhiều thiết bị trong một phiếu, chọn sinh viên và hạn trả từng dòng).
+- Mượn & trả → Truy vết yêu cầu và phiếu mượn. Phiếu mới lưu `request_id` với FK/UNIQUE; nguồn yêu cầu phân biệt `online`/`counter`.
+- Quản lý tài nguyên → Mở đối soát. Thiết bị tách số sẵn sàng, đang mượn và không khả dụng; mỗi điều chỉnh có người ghi, thời điểm, lý do và số trước/sau. Số dư cũ chưa rõ nguyên nhân được đánh dấu chờ kiểm kê thực tế.
+- CSDL cũ: cấu hình `NEXUS_DB_*`, chạy `php scripts/migrate-circulation.php --check`, rồi `--apply` để nâng cấp. Runner tự tạo backup trước DDL và có thể chạy lại. Sau khi khởi tạo mới bằng schema/seed cũng chạy migration để ghi số dư ban đầu và khôi phục liên kết có đủ bằng chứng.
+- Tài liệu thống nhất: [nghiệp vụ và chuẩn hóa](docs/normalization.md), [từ điển CSDL](docs/database-schema.md), [ERD Mermaid](docs/database-erd.mmd). Sinh lại hai tài liệu metadata bằng `php scripts/document-schema.php` sau migration. Không dùng bản xuất cũ `cautruc.sql` thay mô hình hiện hành.
+
+Web chính: **https://btl-csdl-onqi.onrender.com/** — [cấu hình hosting](docs/hosting.md).
 
 Ban demo full-stack cho he thong quan ly trung tam tai nguyen hoc tap.
 
@@ -21,8 +58,9 @@ Ban demo full-stack cho he thong quan ly trung tam tai nguyen hoc tap.
 Copy-Item app/config.example.php app/config.php
 ```
 
-`app/config.php` chỉ lưu cục bộ và không được đưa lên GitHub. Cấu hình mẫu cũng hỗ trợ
-`NEXUS_DB_HOST`, `NEXUS_DB_PORT`, `NEXUS_DB_NAME`, `NEXUS_DB_USER`, `NEXUS_DB_PASS`.
+`app/config.php` trên GitHub chỉ đọc cấu hình từ biến môi trường, không chứa thông tin đăng nhập.
+Đặt `NEXUS_DB_HOST`, `NEXUS_DB_PORT`, `NEXUS_DB_NAME`, `NEXUS_DB_USER`, `NEXUS_DB_PASS`
+trong môi trường chạy. Sau schema/seed, chạy `php scripts/migrate-circulation.php --apply` để ghi số dư đầu kỳ và nâng cấp liên kết.
 
 4. Chay PHP built-in server:
 

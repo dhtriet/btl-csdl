@@ -83,6 +83,7 @@ function showError(element, message) {
 
 function setUser(user) {
   state.user = user;
+  if (typeof configureCirculationDesk === 'function') configureCirculationDesk();
   if (!user) {
     $('#login-screen').classList.remove('is-hidden');
     $('#app-shell').classList.add('is-hidden');
@@ -547,7 +548,7 @@ function renderStudentBorrowRequests(items) {
     const tone = item.status === 'pending' ? 'warning' : item.status === 'rejected' ? 'danger' : item.status === 'approved' ? 'is-approved' : 'is-completed';
     const note = item.review_note ? `<small>Phản hồi: ${escapeHtml(item.review_note)}</small>` : '';
     const items = String(item.items || '').replaceAll('(han ', '(hạn ');
-    return `<div class="request-row"><strong>${type} #${escapeHtml(item.id)}</strong><span>${escapeHtml(items)} · gửi ${formatDate(item.requested_at)}</span>${item.note ? `<small>Ghi chú: ${escapeHtml(item.note)}</small>` : ''}${note}<em class="status-pill ${tone}">${requestStatus(item.status)}</em></div>`;
+    return `<div class="request-row"><strong>${type} #${escapeHtml(item.id)}</strong><span>${escapeHtml(items)} · gửi ${formatDate(item.requested_at)}</span>${item.note ? `<small>Ghi chú: ${escapeHtml(item.note)}</small>` : ''}${note}<em class="status-pill ${tone}">${requestStatus(item.status)}</em>${item.request_type!=='room'?`<button class="text-button" type="button" data-desk-trace="${escapeHtml(item.request_type)}:${Number(item.id)}">Xem phiếu liên quan</button>`:''}</div>`;
   }).join('');
 }
 
@@ -1058,7 +1059,7 @@ function renderReviewHistory(items) {
     const approved = item.status === 'approved';
     const status = approved ? 'Đã duyệt' : 'Từ chối';
     const tone = approved ? '' : 'danger';
-    return `<article class="approval-row processed-row"><div><span class="mini-label">${escapeHtml(item.request_label)}</span><strong>${escapeHtml(item.student_name)} <small>${escapeHtml(item.student_code)}</small></strong><p>${escapeHtml(item.items)}</p><small>Xử lý ${formatDateTime(item.reviewed_at)} · ${escapeHtml(item.librarian_name || 'Thủ thư')}</small>${item.review_note ? `<small>Ghi chú: ${escapeHtml(item.review_note)}</small>` : ''}</div><span class="status-pill ${tone}">${status}</span></article>`;
+    return `<article class="approval-row processed-row"><div><span class="mini-label">${escapeHtml(item.request_label)}</span><strong>${escapeHtml(item.student_name)} <small>${escapeHtml(item.student_code)}</small></strong><p>${escapeHtml(item.items)}</p><small>Xử lý ${formatDateTime(item.reviewed_at)} · ${escapeHtml(item.librarian_name || 'Thủ thư')}</small>${item.review_note ? `<small>Ghi chú: ${escapeHtml(item.review_note)}</small>` : ''}${item.request_type!=='room'?`<button class="text-button" type="button" data-desk-trace="${escapeHtml(item.request_type)}:${Number(item.id)}">Truy vết yêu cầu #${Number(item.id)}</button>`:''}</div><span class="status-pill ${tone}">${status}</span></article>`;
   }).join('');
 }
 
@@ -1108,7 +1109,7 @@ async function loadReports() {
 async function loadAdmin() {
   try {
     const { data } = await api('/api/accounts');
-    $('#account-table').innerHTML = data.length ? `<table class="data-table"><thead><tr><th>Người dùng</th><th>Định danh</th><th>Vai trò</th><th>Liên hệ</th></tr></thead><tbody>${data.map((item) => `<tr><td><strong>${escapeHtml(item.full_name)}</strong><br><span class="muted">${escapeHtml(item.username)}</span></td><td>${escapeHtml(item.student_code || item.librarian_code || '—')}</td><td>${item.role === 'admin' ? 'Quản trị viên' : item.role === 'librarian' ? 'Thủ thư' : 'Sinh viên'}</td><td>${escapeHtml(item.email || '—')}</td></tr>`).join('')}</tbody></table>` : '<div class="empty-state">Chưa có tài khoản.</div>';
+    $('#account-table').innerHTML = data.length ? `<table class="data-table"><thead><tr><th>Người dùng</th><th>Định danh</th><th>Vai trò</th><th>Liên hệ</th><th>Thông tin</th></tr></thead><tbody>${data.map((item) => `<tr><td><strong>${escapeHtml(item.full_name)}</strong><br><span class="muted">${escapeHtml(item.username)}</span></td><td>${escapeHtml(item.student_code || item.librarian_code || '—')}</td><td>${item.role === 'admin' ? 'Quản trị viên' : item.role === 'librarian' ? 'Thủ thư' : 'Sinh viên'}</td><td>${escapeHtml(item.email || '—')}</td><td><button class="text-button" type="button" data-account-detail="${Number(item.id)}">Xem chi tiết</button></td></tr>`).join('')}</tbody></table>` : '<div class="empty-state">Chưa có tài khoản.</div>';
   } catch (error) {
     showError($('#account-table'), error.message);
   }

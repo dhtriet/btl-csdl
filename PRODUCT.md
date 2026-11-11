@@ -16,9 +16,11 @@ Bring the center's learning resources and students' borrowing activity into one 
 
 ## Capabilities and Constraints
 
+Librarians can issue multi-item book or equipment loans directly to a selected student at the counter. Counter and online requests share allocation, transaction and return rules; each new receipt has an explicit unique request link. Admins can inspect full reader/librarian contact profiles and related history without authentication secrets. Staff reconcile equipment into available, on-loan and unavailable buckets with reasoned, attributed audit records; unverified legacy shortages must remain clearly marked until a real physical check. The canonical schema has 26 tables; normalization notes explicitly disclose derived fields and controlled denormalization. Schema reference and ERD are generated from the same live metadata.
+
 Students can create a learning kit from a goal, number of weeks, daily study time and current level. Recommendations contain up to three real catalog books, suggested reading focus, available PDF sources and weekly practice. The latest kit is private to each account. Adding selected books to the existing cart requires a separate borrowing submission. Preserve the distinction between catalog metadata, verified PDF passages and suggested exercises.
 
-Existing PHP/MySQL backend and plain HTML, CSS, JavaScript frontend. Preserve authentication, permissions, CSRF, existing data, resource workflows, PDF reading, and the learning assistant. Keep staff workflows available. No database changes are required for this frontend redesign.
+Existing PHP/MySQL backend and plain HTML, CSS, JavaScript frontend. Preserve authentication, permissions, CSRF, existing data, resource workflows, PDF reading, and the learning assistant. Keep staff workflows available. The Pink Glam skin preserves the existing layout. The circulation extension requires the backed-up migration in scripts/migrate-circulation.php and the corresponding 26-table schema; its generated schema reference, ERD and normalization notes describe that implementation.
 
 ## Evidence on Hand
 
@@ -26,7 +28,7 @@ README.md, public/views/app.php, public/assets/app.js, assistant.js, manage.js, 
 
 ## Brand Commitments
 
-Retain Nexus and Vietnamese product terminology. No visual palette or typography has been pinned by the user.
+Retain Nexus and Vietnamese product terminology. The user pinned Pink Glam / Y2K Sparkle for the desktop web interface: cream pink ground, hot pink glossy discovery banner, translucent sidebar and cards, magenta actions, plum text and restrained animated sparkles. Preserve the exact existing layout, components, text and live data. Retain the existing self-hosted typography. Phone redesign remains outside this pass. Apply the skin to the existing PHP/HTML/CSS application and provide a separate React component example without migrating the running frontend.
 
 ## Product Principles
 

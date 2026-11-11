@@ -1,50 +1,282 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-04T00:00:00Z",
-  "title": "Design System: Open Campus",
+  "generatedAt": "2026-11-10T00:00:00Z",
+  "title": "Design System: Nexus Pink Glam",
   "extensions": {
     "colorMeta": {
-      "paper": {"role":"neutral","displayName":"Warm Cream","tonalRamp":["oklch(15% .01 90)","oklch(26% .015 90)","oklch(38% .02 90)","oklch(49% .025 90)","oklch(61% .03 90)","oklch(72% .03 90)","oklch(84% .025 90)","oklch(95% .015 90)"]},
-      "paper-deep": {"role":"neutral","displayName":"Cream Shade","tonalRamp":["oklch(15% .01 110)","oklch(26% .015 110)","oklch(38% .02 110)","oklch(49% .025 110)","oklch(61% .03 110)","oklch(72% .03 110)","oklch(84% .025 110)","oklch(95% .015 110)"]},
-      "ink": {"role":"neutral","displayName":"Campus Ink","tonalRamp":["oklch(15% .005 120)","oklch(26% .01 120)","oklch(38% .015 120)","oklch(49% .02 120)","oklch(61% .02 120)","oklch(72% .02 120)","oklch(84% .015 120)","oklch(95% .005 120)"]},
-      "muted": {"role":"neutral","displayName":"Muted Olive Ink","tonalRamp":["oklch(15% .01 120)","oklch(26% .015 120)","oklch(38% .02 120)","oklch(49% .025 120)","oklch(61% .03 120)","oklch(72% .025 120)","oklch(84% .02 120)","oklch(95% .01 120)"]},
-      "line": {"role":"neutral","displayName":"Soft Olive Rule","tonalRamp":["oklch(15% .01 115)","oklch(26% .015 115)","oklch(38% .02 115)","oklch(49% .025 115)","oklch(61% .03 115)","oklch(72% .025 115)","oklch(84% .02 115)","oklch(95% .01 115)"]},
-      "teal": {"role":"primary","displayName":"Forest Green","tonalRamp":["oklch(15% .025 135)","oklch(26% .05 135)","oklch(38% .075 135)","oklch(49% .09 135)","oklch(61% .1 135)","oklch(72% .09 135)","oklch(84% .06 135)","oklch(95% .02 135)"]},
-      "coral": {"role":"secondary","displayName":"Warm Coral","tonalRamp":["oklch(15% .025 35)","oklch(26% .06 35)","oklch(38% .1 35)","oklch(49% .14 35)","oklch(61% .15 35)","oklch(72% .12 35)","oklch(84% .07 35)","oklch(95% .02 35)"]},
-      "gold": {"role":"secondary","displayName":"Warning Ochre","tonalRamp":["oklch(15% .02 75)","oklch(26% .04 75)","oklch(38% .07 75)","oklch(49% .09 75)","oklch(61% .11 75)","oklch(72% .1 75)","oklch(84% .06 75)","oklch(95% .02 75)"]},
-      "danger": {"role":"secondary","displayName":"Danger Red","tonalRamp":["oklch(15% .025 32)","oklch(26% .06 32)","oklch(38% .1 32)","oklch(49% .14 32)","oklch(61% .15 32)","oklch(72% .12 32)","oklch(84% .07 32)","oklch(95% .02 32)"]},
-      "white": {"role":"neutral","displayName":"Warm White","tonalRamp":["oklch(15% .005 95)","oklch(26% .01 95)","oklch(38% .015 95)","oklch(49% .02 95)","oklch(61% .02 95)","oklch(72% .02 95)","oklch(84% .015 95)","oklch(95% .005 95)"]},
-      "campus-green": {"role":"primary","displayName":"Apple Green","tonalRamp":["oklch(15% .025 135)","oklch(26% .055 135)","oklch(38% .09 135)","oklch(49% .13 135)","oklch(61% .16 135)","oklch(72% .17 135)","oklch(84% .14 135)","oklch(95% .04 135)"]}
+      "paper": {
+        "role": "neutral",
+        "displayName": "Cream Pink"
+      },
+      "paper-deep": {
+        "role": "neutral",
+        "displayName": "Pink Shade"
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Plum Ink"
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted Plum"
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Rose Rule"
+      },
+      "teal": {
+        "role": "primary",
+        "displayName": "Deep Magenta"
+      },
+      "teal-deep": {
+        "role": "primary",
+        "displayName": "Plum Magenta"
+      },
+      "coral": {
+        "role": "primary",
+        "displayName": "Assistant Magenta"
+      },
+      "gold": {
+        "role": "secondary",
+        "displayName": "Warning Ochre"
+      },
+      "danger": {
+        "role": "secondary",
+        "displayName": "Danger Rose"
+      },
+      "white": {
+        "role": "neutral",
+        "displayName": "Pink White"
+      },
+      "campus-green": {
+        "role": "primary",
+        "displayName": "Legacy Pink Alias"
+      },
+      "glam-primary": {
+        "role": "primary",
+        "displayName": "Action Magenta"
+      },
+      "glam-primary-hover": {
+        "role": "primary",
+        "displayName": "Hover Magenta"
+      },
+      "glam-rose": {
+        "role": "primary",
+        "displayName": "Glossy Rose"
+      },
+      "glam-hot": {
+        "role": "primary",
+        "displayName": "Hot Pink"
+      },
+      "glam-glass": {
+        "role": "neutral",
+        "displayName": "Frosted Pink Glass"
+      },
+      "glam-shine": {
+        "role": "neutral",
+        "displayName": "White Shine"
+      }
     },
     "typographyMeta": {
-      "label":{"displayName":"Visible Label","purpose":"Learning-kit form labels and compact metadata; form labels use weight 600, source links regular weight with line-height 1.7."},
-      "section-heading":{"displayName":"Result Section Heading","purpose":"Learning-kit result heading, distinct from the smaller panel and resource-group title role; inherits the shell body line-height."},
-      "display":{"displayName":"Student Greeting","purpose":"Primary student greeting; 36px at intermediate widths and 34px on mobile."},
-      "headline":{"displayName":"Screen Heading","purpose":"Standard screen titles."},
-      "title":{"displayName":"Panel Heading","purpose":"Panel and resource section titles."},
-      "body":{"displayName":"Reading Text","purpose":"Default body text below desktop widths; supporting labels use smaller sizes."},
-      "desktop-body":{"displayName":"Desktop Reading Text","purpose":"14px body from 1000px; meaningful metadata 12–13px, request titles 14px, status chips 11px. Defined by campus-desktop.css."}
+      "label": {
+        "displayName": "Visible Label",
+        "purpose": "Learning-kit form labels and compact metadata; form labels use weight 600, source links regular weight with line-height 1.7."
+      },
+      "section-heading": {
+        "displayName": "Result Section Heading",
+        "purpose": "Learning-kit result heading, distinct from the smaller panel and resource-group title role; inherits the shell body line-height."
+      },
+      "display": {
+        "displayName": "Student Greeting",
+        "purpose": "Primary student greeting; 36px at intermediate widths and 34px on mobile."
+      },
+      "headline": {
+        "displayName": "Screen Heading",
+        "purpose": "Standard screen titles."
+      },
+      "title": {
+        "displayName": "Panel Heading",
+        "purpose": "Panel and resource section titles."
+      },
+      "body": {
+        "displayName": "Reading Text",
+        "purpose": "Default body text below desktop widths; supporting labels use smaller sizes."
+      },
+      "desktop-body": {
+        "displayName": "Desktop Reading Text",
+        "purpose": "14px body from 1000px; meaningful metadata 12–13px, request titles 14px, status chips 11px. The Pink Glam skin retains campus-desktop.css typography."
+      }
     },
-    "shadows":[{"name":"modal","value":"0 12px 32px rgb(44 46 42 / 10%)","purpose":"Soft modal elevation; ordinary lists use tonal surfaces and separators."}],
-    "motion":[{"name":"destination-marker","value":"320ms cubic-bezier(.16,1,.3,1)","purpose":"Scale active marker from .5 to 1 only when reduced motion is not requested."},{"name":"reduced-motion","value":"none","purpose":"Disable animation and transitions when prefers-reduced-motion is reduce."}],
-    "breakpoints":[{"name":"mobile-max","value":"760px"},{"name":"workspace-stack-max","value":"1000px"},{"name":"wide-min","value":"1280px"}]
+    "shadows": [
+      {
+        "name": "shared",
+        "value": "0 16px 40px rgb(122 26 78 / 12%)",
+        "purpose": "Shared desktop modal elevation."
+      },
+      {
+        "name": "discovery",
+        "value": "0 14px 34px rgb(216 27 96 / 21%), 0 0 0 2px #fffafd, 0 0 0 4px #ffb7dc, inset 0 0 0 1px rgb(255 255 255 / 80%)",
+        "purpose": "Glossy discovery material."
+      },
+      {
+        "name": "navigation",
+        "value": "0 5px 22px rgb(216 27 96 / 32%), inset 0 1px 0 rgb(255 255 255 / 65%)",
+        "purpose": "Active desktop destination."
+      },
+      {
+        "name": "action-hover",
+        "value": "0 5px 16px rgb(216 27 96 / 28%), 0 0 15px rgb(255 105 180 / 42%)",
+        "purpose": "Hover glow for primary actions."
+      }
+    ],
+    "motion": [
+      {
+        "name": "glam-stardust",
+        "value": "4.5s–8.5s ease-in-out infinite",
+        "purpose": "28 fixed CSS dust elements, seven pearls; staggered negative delays, opacity .18–.65, translateY(-14px), scale .65–1.12 and rotate 25deg."
+      },
+      {
+        "name": "glam-twinkle",
+        "value": "4.8s ease-in-out infinite",
+        "purpose": "Decorative SVG banner cluster, 105px, varies opacity .65–1 and translates up 4px, scaling .96–1.04."
+      },
+      {
+        "name": "glam-liquid-light",
+        "value": "9s ease-in-out infinite",
+        "purpose": "Banner sheen moves background position from 100% to -75% across a 250%-wide gradient."
+      },
+      {
+        "name": "glam-heart-float",
+        "value": "6s ease-in-out infinite",
+        "purpose": "120px glossy heart and orbital SVG translates up 8px and rotates from -8deg to 5deg."
+      },
+      {
+        "name": "glam-heading-star",
+        "value": "5s ease-in-out infinite",
+        "purpose": "29px greeting twinkle varies opacity .6–1, rotation -12deg–18deg and scale .85–1.1."
+      },
+      {
+        "name": "glam-shimmer",
+        "value": "700ms cubic-bezier(.16, 1, .3, 1) both",
+        "purpose": "One hover pass across enabled primary actions; suppressed while effects are paused."
+      },
+      {
+        "name": "pointer-trail",
+        "value": "600ms",
+        "purpose": "Two canvas stars per fine-pointer emission, throttled to 55ms; no touch trail."
+      },
+      {
+        "name": "action-burst",
+        "value": "850ms",
+        "purpose": "14 canvas stars on pointerup over an enabled button or link, excluding the effects toggle."
+      },
+      {
+        "name": "particle-budget",
+        "value": "90 particles; DPR <= 1.5",
+        "purpose": "RequestAnimationFrame runs only while particles remain; no canvas animation below 1000px, with reduced motion, while paused or when document is hidden."
+      },
+      {
+        "name": "pause-control",
+        "value": "nexus-glam-effects",
+        "purpose": "44px fixed star button at bottom/right 20px; aria-pressed reflects enabled state and localStorage remembers on/off. Hidden pages pause effects; IntersectionObserver pauses offscreen banner/greeting loops."
+      },
+      {
+        "name": "state-transition",
+        "value": "180ms",
+        "purpose": "Navigation and action background/shadow/color transitions retain their incumbent duration."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "none",
+        "purpose": "Keep static CSS/SVG decoration; disable animations, transitions and canvas particles."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "mobile-max",
+        "value": "760px"
+      },
+      {
+        "name": "workspace-stack-max",
+        "value": "1000px"
+      },
+      {
+        "name": "pink-glam-min",
+        "value": "1000px"
+      },
+      {
+        "name": "wide-min",
+        "value": "1280px"
+      }
+    ]
   },
   "components": [
-    {"name":"Primary Button","kind":"button","refersTo":"button-primary","description":"Ink action for search and primary tasks.","html":"<button class=\"ds-primary\">Tìm kiếm</button>","css":".ds-primary{background:var(--ink,#2c2e2a);color:var(--paper,#f5f1e4);border:0;border-radius:7px;min-height:44px;padding:10px 18px;font:500 12px 'Be Vietnam Pro',sans-serif;cursor:pointer}.ds-primary:hover{background:#414a37}.ds-primary:focus-visible{outline:3px solid var(--teal,#365c2a);outline-offset:4px}.ds-primary:disabled{opacity:.55;cursor:not-allowed}"},
-    {"name":"Discovery Search","kind":"input","refersTo":"search-field","description":"Paper search field within discovery.","html":"<label class=\"ds-search\"><span>Tìm tài nguyên</span><input aria-label=\"Tìm tài nguyên\" placeholder=\"Tên sách, tác giả…\"></label>","css":".ds-search{display:flex;align-items:center;gap:12px;padding:6px 6px 6px 16px;border-radius:8px;background:var(--paper,#f5f1e4);color:var(--ink,#2c2e2a);font:400 12px 'Be Vietnam Pro',sans-serif}.ds-search input{min-width:0;min-height:45px;border:0;background:transparent;color:inherit;font:inherit;caret-color:var(--teal,#365c2a)}.ds-search input::placeholder{color:var(--muted,#62665a);opacity:1}.ds-search input:focus-visible{outline:3px solid var(--teal,#365c2a);outline-offset:4px}"},
-    {"name":"Active Navigation","kind":"nav","refersTo":"navigation-active","description":"Labelled destination with trailing green marker.","html":"<nav><a class=\"ds-nav\" href=\"#dashboard\" aria-current=\"page\">Tổng quan</a></nav>","css":".ds-nav{position:relative;display:flex;align-items:center;min-height:47px;padding:10px 24px 10px 12px;border-radius:10px;background:var(--ink,#2c2e2a);color:var(--paper,#f5f1e4);font:400 12px/1.5 'Be Vietnam Pro',sans-serif;text-decoration:none}.ds-nav::after{content:'';position:absolute;right:7px;width:9px;height:9px;border-radius:50%;background:var(--campus-green,#8ed462)}.ds-nav:focus-visible{outline:3px solid var(--teal,#365c2a);outline-offset:4px}.ds-nav:hover{background:var(--ink,#2c2e2a)}"},
-    {"name":"Resource Panel","kind":"card","refersTo":"panel","description":"Warm panel with fine separator border.","html":"<section class=\"ds-panel\"><h2>Tài nguyên</h2><p>Không gian học tập của bạn.</p></section>","css":".ds-panel{padding:24px;background:var(--white,#fffdf7);color:var(--ink,#2c2e2a);border:1px solid var(--line,#d8dacb);border-radius:14px;font:400 13px/1.65 'Be Vietnam Pro',sans-serif}.ds-panel h2{margin:0;font:700 18px/1.4 Manrope,'Be Vietnam Pro',sans-serif;letter-spacing:-.025em}.ds-panel p{margin-bottom:0}"},
-    {"name":"Status Chip","kind":"chip","description":"Compact status supporting resource and request rows.","html":"<span class=\"ds-status\">Có sẵn</span>","css":".ds-status{display:inline-block;background:#e2ebd5;color:#3c5c2f;border-radius:999px;padding:4px 8px;font:500 10px/1.5 'Be Vietnam Pro',sans-serif}"},
-    {"name":"Discovery Surface","kind":"custom","refersTo":"discovery","description":"Apple green area for finding resources.","html":"<section class=\"ds-discovery\"><h2>Bạn đang tìm gì?</h2><div class=\"ds-tabs\"><button class=\"ds-selected\">Sách</button><button>Phòng học</button><button>Thiết bị</button></div></section>","css":".ds-discovery{padding:25px 27px 21px;background:var(--campus-green,#8ed462);color:var(--ink,#2c2e2a);border-radius:16px}.ds-discovery h2{margin:0;font:800 25px/1.35 Manrope,'Be Vietnam Pro',sans-serif;letter-spacing:-.03em}.ds-tabs{display:flex;gap:23px;margin-top:19px;border-bottom:1px solid #5f973e}.ds-tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:0 0 11px;min-height:36px;color:#2f4826;font:400 12px 'Be Vietnam Pro',sans-serif}.ds-tabs .ds-selected{color:var(--ink,#2c2e2a);border-color:var(--ink,#2c2e2a);font-weight:700}.ds-tabs button:hover{border-color:#496d35}.ds-tabs button:focus-visible{outline:3px solid var(--teal,#365c2a);outline-offset:4px}"}
-,
-    {"name":"Goal Disclosure","kind":"custom","description":"Native learning-kit disclosure with a visible goal label; expanded content uses the quiet reading surface.","html":"<details class=\"ds-goal\" open><summary class=\"ds-goal-summary\"><span><strong>Bộ học liệu theo mục tiêu</strong><span>Một mục tiêu cụ thể. Những cuốn sách phù hợp.</span></span><svg class=\"ds-goal-icon\" aria-hidden=\"true\" viewBox=\"0 0 24 24\"><path d=\"M12 5v14M5 12h14\"/></svg></summary><div class=\"ds-goal-content\"><label class=\"ds-goal-label\">Bạn muốn làm được điều gì?<textarea class=\"ds-goal-input\" rows=\"3\" minlength=\"10\" maxlength=\"600\" placeholder=\"Ví dụ: Tôi cần làm đồ án cơ sở dữ liệu trong 3 tuần.\"></textarea></label></div></details>","css":".ds-goal{background:var(--white,#fffdf7);color:var(--ink,#2c2e2a);border:1px solid var(--line,#d8dacb);border-radius:14px;font:400 14px/1.65 var(--font-body,'Be Vietnam Pro',sans-serif)}.ds-goal-summary{display:flex;align-items:center;justify-content:space-between;gap:24px;cursor:pointer;padding:22px 25px;list-style:none}.ds-goal-summary::-webkit-details-marker{display:none}.ds-goal-summary strong{display:block;font:700 18px/1.65 var(--font-heading,Manrope,'Be Vietnam Pro',sans-serif)}.ds-goal-summary span span{display:block;font-size:12px;color:var(--muted,#62665a);margin-top:5px}.ds-goal[open]>.ds-goal-summary{background:var(--paper-deep,#e9eadb);border-radius:14px 14px 0 0;border-bottom:1px solid var(--line,#d8dacb)}.ds-goal-icon{width:18px;height:18px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.8}.ds-goal[open] .ds-goal-icon{rotate:45deg}.ds-goal-content{padding:25px}.ds-goal-label{display:grid;gap:8px;font-size:12px;font-weight:600}.ds-goal-input{padding:11px 13px;min-height:85px;resize:vertical;border:1px solid var(--line,#d8dacb);border-radius:8px;background:var(--white,#fffdf7);color:var(--ink,#2c2e2a);font:400 13px/1.75 var(--font-body,'Be Vietnam Pro',sans-serif);caret-color:var(--teal,#365c2a)}.ds-goal-input:focus{border-color:var(--teal,#365c2a)}.ds-goal-input::placeholder{color:var(--muted,#62665a);opacity:1}.ds-goal-summary:hover{cursor:pointer}.ds-goal-summary:focus-visible,.ds-goal-input:focus-visible{outline:3px solid var(--teal,#365c2a);outline-offset:4px}"}
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Desktop magenta primary action with one hover shimmer pass.",
+      "html": "<button class=\"ds-primary\">Tìm kiếm</button>",
+      "css": ".ds-primary{position:relative;isolation:isolate;overflow:hidden;background:var(--glam-primary,#d81b60);color:#fff;border:0;border-radius:7px;min-height:44px;padding:10px 18px;font:500 12px var(--font-body,\"Be Vietnam Pro\",sans-serif);cursor:pointer;box-shadow:0 4px 12px rgb(216 27 96 / 15%);transition:background-color 180ms,box-shadow 180ms}.ds-primary::after{content:\"\";position:absolute;inset:0;pointer-events:none;background:linear-gradient(110deg,transparent 30%,rgb(255 255 255 / 32%) 49%,transparent 68%);transform:translateX(-130%)}.ds-primary:hover:not(:disabled){background:var(--glam-primary-hover,#b31552);box-shadow:0 5px 16px rgb(216 27 96 / 28%),0 0 15px rgb(255 105 180 / 42%)}.ds-primary:hover:not(:disabled)::after{animation:ds-shimmer 700ms cubic-bezier(.16,1,.3,1) both}.ds-primary:focus-visible{outline:3px solid var(--glam-primary,#d81b60);outline-offset:4px}.ds-primary:disabled{opacity:.55;cursor:not-allowed}@keyframes ds-shimmer{to{transform:translateX(130%)}}@media(prefers-reduced-motion:reduce){.ds-primary{transition:none}.ds-primary::after{animation:none!important}}"
+    },
+    {
+      "name": "Discovery Search",
+      "kind": "input",
+      "refersTo": "search-field",
+      "description": "Same discovery input in a near-white capsule.",
+      "html": "<label class=\"ds-search\"><span>Tìm tài nguyên</span><input aria-label=\"Tìm tài nguyên\" placeholder=\"Tên sách, tác giả…\"></label>",
+      "css": ".ds-search{display:flex;align-items:center;gap:12px;padding:6px 6px 6px 16px;border-radius:28px;background:rgb(255 250 253 / 94%);color:var(--ink,#4a0e2e);font:400 13px var(--font-body,\"Be Vietnam Pro\",sans-serif);box-shadow:0 4px 16px rgb(135 16 80 / 10%),inset 0 0 0 1px #fff}.ds-search input{min-width:0;min-height:45px;border:0;background:transparent;color:inherit;font:inherit;caret-color:var(--glam-primary,#d81b60)}.ds-search input::placeholder{color:var(--muted,#80506a);opacity:1}.ds-search:hover{cursor:text}.ds-search:focus-within{box-shadow:0 0 0 3px #fff,0 0 0 5px var(--glam-primary,#d81b60),0 4px 18px rgb(216 27 96 / 20%)}.ds-search input:focus-visible{outline:none}"
+    },
+    {
+      "name": "Active Navigation",
+      "kind": "nav",
+      "refersTo": "navigation-active",
+      "description": "Labelled desktop destination with a trailing four-point twinkle.",
+      "html": "<nav><a class=\"ds-nav\" href=\"#dashboard\" aria-current=\"page\">Tổng quan</a></nav>",
+      "css": ".ds-nav{position:relative;display:flex;align-items:center;min-height:47px;padding:10px 12px;border-radius:24px;background:linear-gradient(110deg,#d81b60,#c2186b);color:#fff;font:400 13px/1.5 var(--font-body,\"Be Vietnam Pro\",sans-serif);text-decoration:none;box-shadow:0 5px 22px rgb(216 27 96 / 32%),inset 0 1px 0 rgb(255 255 255 / 65%)}.ds-nav::after{content:\"\";position:absolute;right:7px;width:10px;height:10px;background:#fff1fa;clip-path:polygon(50% 0,62% 37%,100% 50%,62% 63%,50% 100%,38% 63%,0 50%,38% 37%)}.ds-nav:hover{color:#fff}.ds-nav:focus-visible{outline:3px solid var(--glam-primary,#d81b60);outline-offset:4px}"
+    },
+    {
+      "name": "Resource Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Ordinary frosted panel; open student reading groups keep their own flat treatment.",
+      "html": "<section class=\"ds-panel\"><h2>Tài nguyên</h2><p>Không gian học tập của bạn.</p></section>",
+      "css": ".ds-panel{padding:24px;background:var(--glam-glass,rgb(255 250 253 / 76%));color:var(--ink,#4a0e2e);border:1px solid var(--line,#ecc4d8);border-radius:14px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font:400 14px/1.65 var(--font-body,\"Be Vietnam Pro\",sans-serif)}.ds-panel h2{margin:0;font:700 18px/1.4 var(--font-heading,Manrope,\"Be Vietnam Pro\",sans-serif);letter-spacing:-.025em}.ds-panel p{margin-bottom:0}"
+    },
+    {
+      "name": "Status Chip",
+      "kind": "chip",
+      "description": "Approved/default desktop status; wording carries meaning alongside color.",
+      "html": "<span class=\"ds-status\">Có sẵn</span>",
+      "css": ".ds-status{display:inline-block;background:#f9ddea;color:#81234f;border-radius:999px;padding:4px 8px;font:500 11px/1.5 var(--font-body,\"Be Vietnam Pro\",sans-serif)}"
+    }
   ],
   "narrative": {
-    "northStar":"Open Campus",
-    "overview":"Apple green discovery surfaces sit on warm cream, with ink navigation and quiet ruled lists. Manrope headings and Be Vietnam Pro body copy give the workspace a welcoming, readable character. Color draws attention to finding resources while personal activity remains compact.",
-    "keyCharacteristics":["Apple green and warm cream.","Dark navigation with a circular green destination marker.","Rounded controls and quiet ruled activity lists.","Self-hosted Vietnamese-capable typography."],
-    "rules":[{"name":"The Purposeful Green Rule","body":"Use campus green for discovery and destination cues; keep long reading areas on paper or white.","section":"colors"}],
-    "dos":["Do pair Manrope headings with Be Vietnam Pro body copy.","Do preserve visible keyboard focus and reduced-motion behavior.","Do distinguish discovery surfaces from quiet reading areas."],
-    "donts":["Don't turn every activity row into an elevated card.","Don't replace the green destination marker with an unlabeled navigation state."]
+    "northStar": "Pink Glam / Y2K Sparkle",
+    "overview": "Cream pink light, glossy rose-to-hot-pink discovery and plum type give Nexus the feel of a personal study space. Translucent materials, a glossy heart ornament, pearl-like dust and geometric four-point twinkles create the more extravagant sparkle requested by the user while compact resource and borrowing information remains easy to scan.\n\nThis is the user-pinned desktop skin, extracted from `public/assets/pink-glam.css` and `public/assets/pink-glam-effects.js`, with CSS layered after `campus.css` and `campus-desktop.css`. The values in the frontmatter apply from 1000px; smaller screens retain the existing Open Campus skin. The exact existing composition, components, text and live data are binding constraints. The specific surface contract is `.impeccable/surfaces/pink-glam.md`; the older application contract now points to the same direction. No approved image comp exists: implementation is code-led.",
+    "keyCharacteristics": [
+      "Cream pink ground and a glossy rose-to-hot-pink discovery banner.",
+      "Frosted surfaces, plum type and magenta actions.",
+      "Capsule navigation with a four-point destination twinkle.",
+      "Self-hosted Vietnamese-capable typography and expressive sparkle effects with a persistent pause control."
+    ],
+    "rules": [
+      {
+        "name": "The Readable Gloss Rule",
+        "body": "Keep the discovery banner's white softening layer and dark plum labels together; do not remove the overlay while retaining the same text treatment.",
+        "section": "colors"
+      }
+    ],
+    "dos": [
+      "Do preserve the exact existing layout, components, Vietnamese text and live data.",
+      "Do pair Manrope headings with Be Vietnam Pro body copy.",
+      "Do preserve visible keyboard focus and reduced-motion behavior.",
+      "Do keep the desktop skin scoped from 1000px and retain the smaller-screen Open Campus presentation."
+    ],
+    "donts": [
+      "Don't turn every activity row into an elevated card.",
+      "Don't replace the PHP frontend with the separate React example.",
+      "Don't hardcode account identity, inventory or activity to match a demonstration."
+    ]
   }
 }
