@@ -227,7 +227,6 @@ function manage_resources(PDO $pdo, string $method, ?string $type, ?string $rawI
         ));
     }
     if (!in_array($method,['POST','PUT','PATCH','DELETE'],true) || ($method!=='POST') !== ($id!==null)) throw new ApiException('Phương thức không hỗ trợ.',405);
-    if ($method==='DELETE' && ($_SESSION['user']['role'] ?? '')!=='admin') throw new ApiException('Chỉ quản trị viên được xóa tài nguyên.',403);
     $body=request_body();
     $pdo->beginTransaction();
     try {
@@ -258,11 +257,7 @@ function manage_resources(PDO $pdo, string $method, ?string $type, ?string $rawI
             $active=$pdo->prepare('SELECT COALESCE(SUM(quantity),0) FROM equipment_loan_details WHERE equipment_id=? AND return_date IS NULL');
             $active->execute([$id]); $onLoan=(int)$active->fetchColumn();
             $blocked=(int)($old['unavailable_quantity'] ?? 0);
-            if ((int)$data['total_quantity'] !== (int)$data['available_quantity']+$blocked+$onLoan) throw new ApiException('Tồn kho chưa cân bằng. Hãy đối soát thiết bị trước khi sửa số lượng.',409);
-            $event=$old?'adjustment':'opening';
-            $reason=$old?'Điều chỉnh tổng số lượng từ quản lý tài nguyên.':'Khởi tạo thiết bị do nhân viên khai báo; chờ kiểm kê thực tế.';
-            $q=$pdo->prepare('INSERT INTO equipment_inventory_adjustments (equipment_id,actor_account_id,event_type,old_total,old_available,old_unavailable,new_total,new_available,new_unavailable,on_loan_quantity,reason) VALUES (?,?,?,?,?,?,?,?,?,?,?)');
-            $q->execute([$id,current_user()['id'],$event,$old['total_quantity']??0,$old['available_quantity']??0,$blocked,$data['total_quantity'],$data['available_quantity'],$blocked,$onLoan,$reason]);
+            if ((int)$data['total_quantity'] !== (int)$data['available_quantity']+$blocked+$onLoan) throw new ApiException('Tồn kho chưa cân bằng. Hãy kiểm tra số đang mượn và số không khả dụng trước khi sửa số lượng.',409);
         }
         $saved=managed_record($pdo,$type,$id);
         $pdo->commit();

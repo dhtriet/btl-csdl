@@ -113,7 +113,7 @@
         </div>
         <div class="filter-bar">
           <label class="search-field"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24"><use href="#icon-search"/></svg><input id="book-search" aria-label="Tìm tên sách" placeholder="Nhập tên sách..." autocomplete="off"></label>
-          <select id="book-language" aria-label="Ngôn ngữ"><option value="">Mọi ngôn ngữ</option><option value="Tiếng Việt">Tiếng Việt</option><option value="English">English</option></select>
+          <select id="book-language" aria-label="Ngôn ngữ"><option value="">Mọi ngôn ngữ</option><option value="Tiếng Việt">Tiếng Việt</option><option value="English">Tiếng Anh</option></select>
           <input id="book-year" aria-label="Năm xuất bản" type="number" min="1900" max="2100" placeholder="Năm">
           <button id="book-search-button" class="primary-button compact">Tìm kiếm</button>
         </div>
@@ -151,6 +151,7 @@
           <article class="panel panel-wide"><div class="panel-heading"><div><h2>Sách cần xử lý</h2></div><span class="panel-badge danger">Ưu tiên quá hạn lâu</span></div><div id="overdue-books-table" class="table-wrap"></div></article>
           <article class="panel"><div class="panel-heading"><div><h2>Lịch sử gần đây</h2></div></div><div id="returned-books-list" class="compact-list"></div></article>
         </div>
+        <article class="panel"><div class="panel-heading"><div><h2>Yêu cầu gia hạn sách</h2><p>Sinh viên gửi yêu cầu. Thủ thư duyệt hoặc từ chối; hạn trả chỉ thay đổi khi được duyệt.</p></div><button id="reload-extension-requests" class="text-button" type="button">Tải lại yêu cầu</button></div><div id="extension-requests-list" class="table-wrap" aria-live="polite"></div></article>
         <article id="librarian-return-desk" class="panel librarian-return-desk is-hidden"><div class="panel-heading"><div><h2>Ghi nhận trả tài nguyên</h2></div><button id="reload-returns" class="text-button" type="button">Tải lại <span>↻</span></button></div><div class="return-desk-grid"><div><h5>Sách đang mượn</h5><div id="active-book-returns" class="table-wrap"></div></div><div><h5>Thiết bị đang mượn</h5><div id="active-equipment-returns" class="table-wrap"></div></div><div class="return-history-block"><h5>Lịch sử trả sách</h5><div id="returned-book-list" class="compact-list"></div></div><div class="return-history-block"><h5>Lịch sử trả thiết bị</h5><div id="returned-equipment-list" class="compact-list"></div></div><div class="room-history-block"><h5>Lịch sử đặt phòng</h5><div id="room-usage-history" class="table-wrap"></div></div></div></article>
         <article id="student-history-panel" class="panel history-panel is-hidden"><div class="panel-heading"><div><h4 id="history-title">Lịch sử sinh viên</h2></div><button id="close-history" class="icon-button" aria-label="Đóng">×</button></div><div id="student-history-content"></div></article>
       </section>
@@ -209,7 +210,6 @@
 
       <section id="view-manage" class="page-view" aria-labelledby="management-heading">
         <div class="section-intro"><div><h1 id="management-heading">Quản lý tài nguyên</h1><p>Quản lý thông tin, hình ảnh và hiển thị của tài nguyên.</p></div><button id="management-add" class="primary-button" type="button">Thêm đầu sách</button></div>
-        <article class="panel"><div class="panel-heading"><div><h2>Đối soát tồn kho thiết bị</h2><p>Phân biệt sẵn sàng, đang mượn và không khả dụng; giữ lịch sử điều chỉnh.</p></div><button id="inventory-load" type="button" class="text-button">Mở đối soát</button></div><div id="inventory-workspace" class="is-hidden"><p class="muted">Tổng = Sẵn sàng + Đang mượn + Không khả dụng. Các số dư cũ chưa rõ nguyên nhân được đánh dấu chờ kiểm kê.</p><div id="inventory-list" class="table-wrap"></div><div id="inventory-editor"></div></div></article>
         <div id="management-tabs" class="management-tabs" role="group" aria-label="Loại tài nguyên"><button data-resource-type="books" class="is-active" aria-pressed="true">Đầu sách</button><button data-resource-type="copies" aria-pressed="false">Bản sách</button><button data-resource-type="rooms" aria-pressed="false">Phòng học</button><button data-resource-type="equipment" aria-pressed="false">Thiết bị</button></div>
         <p class="management-help">Đầu sách lưu tên, tác giả và ảnh bìa. Bản sách là từng cuốn có mã vạch để mượn trả: một đầu sách có thể có nhiều bản sách.</p><article class="panel"><div class="management-toolbar"><form id="management-search-form"><label class="sr-only" for="management-search">Tìm tên hoặc mã vạch</label><input id="management-search" placeholder="Tìm tên hoặc mã vạch…" autocomplete="off"><button class="primary-button compact" type="submit">Tìm kiếm</button></form><div><label for="management-visibility">Hiển thị </label><select id="management-visibility"><option value="all">Tất cả</option><option value="1">Hiện</option><option value="0">Đã ẩn</option></select><span id="management-count"></span><button id="management-reload" class="text-button" type="button">Tải lại</button></div></div><div id="management-table" class="table-wrap"></div><nav id="management-pagination" class="catalog-pagination" aria-label="Phân trang quản lý tài nguyên"></nav></article>
       </section>
@@ -259,9 +259,9 @@
   </div>
   <script src="/assets/assistant.js?v=study-kit-1"></script>
   <script src="/assets/learning-kit.js?v=kit-3"></script>
-  <script src="/assets/manage.js?v=visibility-2"></script>
-  <script src="/assets/app.js?v=visibility-2-kit-1"></script>
-  <script src="/assets/circulation-desk.js?v=1"></script>
+  <script src="/assets/manage.js?v=librarian-delete-1"></script>
+  <script src="/assets/app.js?v=extension-requests-1"></script>
+  <script src="/assets/circulation-desk.js?v=no-inventory-2"></script>
   <script type="module" src="/assets/pink-glam-init.js?v=glam-2"></script>
 </body>
 </html>

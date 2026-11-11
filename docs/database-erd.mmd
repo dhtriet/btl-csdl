@@ -96,23 +96,6 @@ erDiagram
         varchar image_path
         tinyint image_is_illustration
         int unavailable_quantity
-        datetime inventory_verified_at
-    }
-    equipment_inventory_adjustments {
-        int id PK
-        int equipment_id FK
-        int actor_account_id FK
-        enum event_type
-        int old_total
-        int old_available
-        int old_unavailable
-        int new_total
-        int new_available
-        int new_unavailable
-        int on_loan_quantity
-        varchar reason
-        datetime created_at
-        int opening_equipment_id UK
     }
     equipment_loan_details {
         int id PK
@@ -154,6 +137,20 @@ erDiagram
         varchar note
         enum status
         int request_id UK,FK
+    }
+    extension_requests {
+        int id PK
+        int loan_detail_id FK
+        date old_due_date
+        date requested_due_date
+        varchar reason
+        enum status
+        datetime requested_at
+        int librarian_id FK
+        datetime reviewed_at
+        varchar review_note
+        int extension_id UK,FK
+        int pending_loan_id UK
     }
     extensions {
         int id PK
@@ -255,8 +252,6 @@ erDiagram
     students ||--o{ book_loan_requests : student_id
     publishers ||--o{ books : publisher_id
     books ||--o| ebooks : book_id
-    accounts o|--o{ equipment_inventory_adjustments : actor_account_id
-    equipment ||--o{ equipment_inventory_adjustments : equipment_id
     equipment ||--o{ equipment_loan_details : equipment_id
     equipment_loans ||--o{ equipment_loan_details : loan_id
     equipment ||--o{ equipment_loan_request_items : equipment_id
@@ -266,6 +261,9 @@ erDiagram
     librarians ||--o{ equipment_loans : librarian_id
     equipment_loan_requests o|--o| equipment_loans : request_id
     students ||--o{ equipment_loans : student_id
+    loan_details ||--o{ extension_requests : loan_detail_id
+    extensions o|--o| extension_requests : extension_id
+    librarians o|--o{ extension_requests : librarian_id
     loan_details ||--o{ extensions : loan_detail_id
     librarians ||--o{ extensions : librarian_id
     accounts ||--o| librarians : account_id

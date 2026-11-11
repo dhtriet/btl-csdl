@@ -10,11 +10,13 @@
 
 ## Khám phá Nexus
 
+Gia hạn sách: sinh viên gửi yêu cầu từ **Đang mượn & lịch sử**, thủ thư duyệt hoặc từ chối trong **Mượn & trả**. [Luồng nghiệp vụ, API và migration](docs/extension-requests.md).
+
 | Dành cho sinh viên | Dành cho thủ thư và quản trị |
 |---|---|
 | Tìm sách, xem bìa và đọc PDF | Duyệt yêu cầu, cấp phát bản sách, nhận trả và gia hạn |
 | Gửi yêu cầu mượn, đặt phòng, theo dõi lịch sử | Lập phiếu trực tiếp tại quầy cho sinh viên |
-| Trợ lý học tập và bộ học liệu theo mục tiêu | Đối soát thiết bị và xem nhật ký điều chỉnh |
+| Trợ lý học tập và bộ học liệu theo mục tiêu | Quản lý thông tin, hình ảnh và ẩn/hiện tài nguyên |
 | Xem tài nguyên và trạng thái thực tế | Xem hồ sơ tài khoản, báo cáo và truy vết yêu cầu–phiếu |
 
 <table>
@@ -33,8 +35,7 @@ Giao diện **Pink Glam / Y2K Sparkle** có nền hồng kem, kính mờ, trái 
 - Admin: Quản trị → Xem chi tiết tài khoản để xem liên hệ, hồ sơ sinh viên/thủ thư và lịch sử liên quan.
 - Thủ thư: Mượn & trả → Lập phiếu mượn tại quầy (nhiều sách hoặc nhiều thiết bị trong một phiếu, chọn sinh viên và hạn trả từng dòng).
 - Mượn & trả → Truy vết yêu cầu và phiếu mượn. Phiếu mới lưu `request_id` với FK/UNIQUE; nguồn yêu cầu phân biệt `online`/`counter`.
-- Quản lý tài nguyên → Mở đối soát. Thiết bị tách số sẵn sàng, đang mượn và không khả dụng; mỗi điều chỉnh có người ghi, thời điểm, lý do và số trước/sau. Số dư cũ chưa rõ nguyên nhân được đánh dấu chờ kiểm kê thực tế.
-- CSDL cũ: cấu hình `NEXUS_DB_*`, chạy `php scripts/migrate-circulation.php --check`, rồi `--apply` để nâng cấp. Runner tự tạo backup trước DDL và có thể chạy lại. Sau khi khởi tạo mới bằng schema/seed cũng chạy migration để ghi số dư ban đầu và khôi phục liên kết có đủ bằng chứng.
+- CSDL cũ: cấu hình `NEXUS_DB_*`, chạy `php scripts/migrate-circulation.php --check`, rồi `--apply` để nâng cấp. Runner tự tạo backup trước DDL và có thể chạy lại. Sau khi khởi tạo mới bằng schema/seed cũng chạy migration để khởi tạo số lượng không khả dụng và khôi phục liên kết có đủ bằng chứng.
 - Tài liệu thống nhất: [nghiệp vụ và chuẩn hóa](docs/normalization.md), [từ điển CSDL](docs/database-schema.md), [ERD Mermaid](docs/database-erd.mmd). Sinh lại hai tài liệu metadata bằng `php scripts/document-schema.php` sau migration. Không dùng bản xuất cũ `cautruc.sql` thay mô hình hiện hành.
 
 Web chính: **https://btl-csdl-onqi.onrender.com/** — [cấu hình hosting](docs/hosting.md).

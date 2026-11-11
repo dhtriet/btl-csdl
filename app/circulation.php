@@ -1,64 +1,6 @@
 <?php
 declare(strict_types=1);
 
-function circulation_equipment_status(string $current, int $available, int $active): string
-{
-    if (in_array($current, ['maintenance', 'damaged'], true)) return $current;
-    return $available > 0 ? 'available' : ($active > 0 ? 'borrowed' : 'unavailable');
-}
-
-function inventory_record(PDO $pdo, int $id, bool $lock = false): array
-{
-    $q = $pdo->prepare('SELECT id,name,total_quantity,available_quantity,unavailable_quantity,status,inventory_verified_at FROM equipment WHERE id=? AND deleted_at IS NULL'.($lock ? ' FOR UPDATE' : ''));
-    $q->execute([$id]);
-    $row = $q->fetch();
-    if (!$row) throw new ApiException('Không tìm thấy thiết bị.', 404);
-    $q = $pdo->prepare('SELECT COALESCE(SUM(quantity),0) FROM equipment_loan_details WHERE equipment_id=? AND return_date IS NULL');
-    $q->execute([$id]);
-    $row['on_loan_quantity'] = (int)$q->fetchColumn();
-    $row['difference'] = (int)$row['total_quantity'] - (int)$row['available_quantity'] - (int)$row['unavailable_quantity'] - $row['on_loan_quantity'];
-    $row['version'] = hash('sha256', json_encode($row));
-    return $row;
-}
-
-function inventory_overview(PDO $pdo): array
-{
-    require_staff();
-    $rows = [];
-    foreach ($pdo->query('SELECT id FROM equipment WHERE deleted_at IS NULL ORDER BY name')->fetchAll(PDO::FETCH_COLUMN) as $id) $rows[] = inventory_record($pdo, (int)$id);
-    return $rows;
-}
-
-function inventory_history(PDO $pdo, int $id): array
-{
-    require_staff();
-    $q = $pdo->prepare('SELECT h.*,a.full_name AS actor_name FROM equipment_inventory_adjustments h LEFT JOIN accounts a ON a.id=h.actor_account_id WHERE h.equipment_id=? ORDER BY h.id DESC LIMIT 100');
-    $q->execute([$id]);
-    return $q->fetchAll();
-}
-
-function reconcile_inventory(PDO $pdo, int $id, array $body): array
-{
-    $user = require_staff();
-    $total = resource_int($body, 'total_quantity', 1, 1000000);
-    $available = resource_int($body, 'available_quantity', 0, 1000000);
-    $unavailable = resource_int($body, 'unavailable_quantity', 0, 1000000);
-    $reason = resource_text($body, 'reason', 1000, true);
-    $pdo->beginTransaction();
-    try {
-        $old = inventory_record($pdo, $id, true);
-        if (!is_string($body['version'] ?? null) || !hash_equals($old['version'], $body['version'])) throw new ApiException('Tồn kho đã thay đổi. Tải lại và kiểm tra số đang mượn.', 409);
-        if ($available + $unavailable + $old['on_loan_quantity'] !== $total) throw new ApiException('Tổng phải bằng sẵn sàng + đang mượn + không khả dụng.');
-        $status = circulation_equipment_status($old['status'], $available, $old['on_loan_quantity']);
-        $q = $pdo->prepare('UPDATE equipment SET total_quantity=?,available_quantity=?,unavailable_quantity=?,status=?,inventory_verified_at=NOW() WHERE id=?');
-        $q->execute([$total, $available, $unavailable, $status, $id]);
-        $q = $pdo->prepare("INSERT INTO equipment_inventory_adjustments (equipment_id,actor_account_id,event_type,old_total,old_available,old_unavailable,new_total,new_available,new_unavailable,on_loan_quantity,reason) VALUES (?,?,'reconciliation',?,?,?,?,?,?,?,?)");
-        $q->execute([$id, $user['id'], $old['total_quantity'], $old['available_quantity'], $old['unavailable_quantity'], $total, $available, $unavailable, $old['on_loan_quantity'], $reason]);
-        $pdo->commit();
-        return inventory_record($pdo, $id);
-    } catch (Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }
-}
-
 function circulation_readers(PDO $pdo): array
 {
     require_staff();
@@ -147,11 +89,6 @@ function route_circulation(PDO $pdo, string $method, ?string $kind, ?string $id,
 {
     if ($kind === 'readers' && $method === 'GET') json_response(['data'=>circulation_readers($pdo)]);
     if ($kind === 'counter-loans' && $method === 'POST') json_response(['data'=>create_counter_loan($pdo, request_body())], 201);
-    if ($kind === 'inventory' && $method === 'GET' && $id === null) json_response(['data'=>inventory_overview($pdo)]);
-    if ($kind === 'inventory' && ctype_digit((string)$id)) {
-        if ($method === 'GET') json_response(['data'=>inventory_history($pdo, (int)$id)]);
-        if ($method === 'POST') json_response(['data'=>reconcile_inventory($pdo, (int)$id, request_body())]);
-    }
     if ($kind === 'trace' && ctype_digit((string)$action) && $method === 'GET') json_response(['data'=>request_trace($pdo, (string)$id, (int)$action)]);
     throw new ApiException('Không tìm thấy chức năng.', 404);
 }

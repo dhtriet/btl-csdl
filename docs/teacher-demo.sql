@@ -12,8 +12,7 @@ ORDER BY TABLE_NAME,CONSTRAINT_TYPE,CONSTRAINT_NAME;
 -- 2. Current inventory buckets and independent consistency calculation.
 SELECT e.id,e.name,e.total_quantity,e.available_quantity,
        COALESCE(active.quantity,0) AS on_loan_quantity,e.unavailable_quantity,
-       e.total_quantity-e.available_quantity-e.unavailable_quantity-COALESCE(active.quantity,0) AS difference,
-       e.inventory_verified_at
+       e.total_quantity-e.available_quantity-e.unavailable_quantity-COALESCE(active.quantity,0) AS difference
 FROM equipment e
 LEFT JOIN (
     SELECT equipment_id,SUM(quantity) AS quantity
@@ -48,12 +47,3 @@ WHERE c.barcode=@barcode;
 SELECT s.student_code,a.username,a.full_name,a.date_of_birth,a.email,a.phone,a.address,s.faculty,s.class_name
 FROM students s JOIN accounts a ON a.id=s.account_id
 WHERE s.student_code=@student_code;
-
--- 6. Inventory audit: actual actor/reason and the recorded stock before/after.
-SELECT h.id,e.name,a.full_name AS actor_name,h.event_type,h.created_at,
-       h.old_total,h.old_available,h.old_unavailable,
-       h.new_total,h.new_available,h.new_unavailable,h.on_loan_quantity,h.reason
-FROM equipment_inventory_adjustments h
-JOIN equipment e ON e.id=h.equipment_id
-LEFT JOIN accounts a ON a.id=h.actor_account_id
-ORDER BY h.id DESC;

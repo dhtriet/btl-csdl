@@ -21,8 +21,6 @@
 .desk-table caption { text-align: left; font-size: 18px; font-weight: 700; padding: 18px 0 10px; color: var(--ink); }
 .desk-table td { overflow-wrap: anywhere; }
 .desk-table small { color: var(--muted); }
-.inventory-warning { color: var(--danger); }
-#inventory-editor:not(:empty) { border-top: 1px solid var(--line); margin-top: 24px; padding-top: 24px; }
 .desk-error { color: var(--danger); margin-top: 14px; }
 .desk-form button[type=submit] { width: fit-content; }
 @media (min-width: 1000px) and (max-width: 1200px) {

@@ -1,6 +1,6 @@
 # Lược đồ triển khai Nexus
 
-Sinh tự động bằng `php scripts/document-schema.php` từ metadata MySQL; không chứa dữ liệu cá nhân. Nguồn khởi tạo: `database/schema.sql`; CSDL cũ nâng cấp bằng `scripts/migrate-circulation.php --apply`.
+Sinh tự động bằng `php scripts/document-schema.php` từ metadata MySQL; không chứa dữ liệu cá nhân. Nguồn khởi tạo: `database/schema.sql`; CSDL cũ nâng cấp bằng `scripts/migrate-circulation.php --apply` và `scripts/migrate-extension-requests.php --apply`.
 
 Số bảng: **26**. Cùng một tập metadata tạo tài liệu này và `database-erd.mmd`; dùng hai tệp này khi cập nhật báo cáo và slide.
 
@@ -140,34 +140,10 @@ Số bảng: **26**. Cùng một tập metadata tạo tài liệu này và `data
 | `image_path` | `varchar(255)` | YES |  | — |
 | `image_is_illustration` | `tinyint(1)` | NO |  | 0 |
 | `unavailable_quantity` | `int unsigned` | NO |  | 0 |
-| `inventory_verified_at` | `datetime` | YES |  | — |
 
 - `chk_equipment_quantities`: `((`total_quantity` > 0) and (`available_quantity` >= 0) and (`available_quantity` <= `total_quantity`))`
 
 - `chk_equipment_stock_buckets`: `((`available_quantity` + `unavailable_quantity`) <= `total_quantity`)`
-
-## `equipment_inventory_adjustments`
-
-| Thuộc tính | Kiểu | NULL | Khóa | Mặc định / suy diễn |
-|---|---|---|---|---|
-| `id` | `int unsigned` | NO | PK | — |
-| `equipment_id` | `int unsigned` | NO | FK | — |
-| `actor_account_id` | `int unsigned` | YES | FK | — |
-| `event_type` | `enum('opening','reconciliation','adjustment')` | NO |  | — |
-| `old_total` | `int unsigned` | NO |  | — |
-| `old_available` | `int unsigned` | NO |  | — |
-| `old_unavailable` | `int unsigned` | NO |  | — |
-| `new_total` | `int unsigned` | NO |  | — |
-| `new_available` | `int unsigned` | NO |  | — |
-| `new_unavailable` | `int unsigned` | NO |  | — |
-| `on_loan_quantity` | `int unsigned` | NO |  | — |
-| `reason` | `varchar(1000)` | NO |  | — |
-| `created_at` | `datetime` | NO |  | CURRENT_TIMESTAMP |
-| `opening_equipment_id` | `int unsigned` | YES | UK | (case when (`event_type` = _utf8mb4\'opening\') then `equipment_id` else NULL end) |
-
-- `chk_inventory_balance`: `((`new_total` > 0) and (`new_total` = ((`new_available` + `new_unavailable`) + `on_loan_quantity`)))`
-
-- `chk_inventory_reason`: `(char_length(trim(`reason`)) > 0)`
 
 ## `equipment_loan_details`
 
@@ -231,6 +207,27 @@ Số bảng: **26**. Cùng một tập metadata tạo tài liệu này và `data
 | `note` | `varchar(255)` | YES |  | — |
 | `status` | `enum('borrowed','returned','overdue')` | NO |  | borrowed |
 | `request_id` | `int unsigned` | YES | UK, FK | — |
+
+## `extension_requests`
+
+| Thuộc tính | Kiểu | NULL | Khóa | Mặc định / suy diễn |
+|---|---|---|---|---|
+| `id` | `int unsigned` | NO | PK | — |
+| `loan_detail_id` | `int unsigned` | NO | FK | — |
+| `old_due_date` | `date` | NO |  | — |
+| `requested_due_date` | `date` | NO |  | — |
+| `reason` | `varchar(500)` | NO |  |  |
+| `status` | `enum('pending','approved','rejected')` | NO |  | pending |
+| `requested_at` | `datetime` | NO |  | CURRENT_TIMESTAMP |
+| `librarian_id` | `int unsigned` | YES | FK | — |
+| `reviewed_at` | `datetime` | YES |  | — |
+| `review_note` | `varchar(500)` | YES |  | — |
+| `extension_id` | `int unsigned` | YES | UK, FK | — |
+| `pending_loan_id` | `int unsigned` | YES | UK | (case when (`status` = _utf8mb4\'pending\') then `loan_detail_id` else NULL end) |
+
+- `chk_extension_request_dates`: `(`requested_due_date` > `old_due_date`)`
+
+- `chk_extension_request_review`: `(((`status` = _utf8mb4\'pending\') and (`librarian_id` is null) and (`reviewed_at` is null) and (`extension_id` is null)) or ((`status` = _utf8mb4\'approved\') and (`librarian_id` is not null) and (`reviewed_at` is not null) and (`extension_id` is not null)) or ((`status` = _utf8mb4\'rejected\') and (`librarian_id` is not null) and (`reviewed_at` is not null) and (`extension_id` is null)))`
 
 ## `extensions`
 
@@ -380,8 +377,6 @@ Số bảng: **26**. Cùng một tập metadata tạo tài liệu này và `data
 | `book_loan_requests.student_id` | `students.id` | `fk_book_loan_requests_student` |
 | `books.publisher_id` | `publishers.id` | `fk_books_publisher` |
 | `ebooks.book_id` | `books.id` | `fk_ebooks_book` |
-| `equipment_inventory_adjustments.actor_account_id` | `accounts.id` | `fk_inventory_actor` |
-| `equipment_inventory_adjustments.equipment_id` | `equipment.id` | `fk_inventory_equipment` |
 | `equipment_loan_details.equipment_id` | `equipment.id` | `fk_equipment_loan_details_equipment` |
 | `equipment_loan_details.loan_id` | `equipment_loans.id` | `fk_equipment_loan_details_loan` |
 | `equipment_loan_request_items.equipment_id` | `equipment.id` | `fk_equipment_loan_request_items_equipment` |
@@ -391,6 +386,9 @@ Số bảng: **26**. Cùng một tập metadata tạo tài liệu này và `data
 | `equipment_loans.librarian_id` | `librarians.id` | `fk_equipment_loans_librarian` |
 | `equipment_loans.request_id` | `equipment_loan_requests.id` | `fk_equipment_loans_request` |
 | `equipment_loans.student_id` | `students.id` | `fk_equipment_loans_student` |
+| `extension_requests.loan_detail_id` | `loan_details.id` | `fk_extension_request_loan` |
+| `extension_requests.extension_id` | `extensions.id` | `fk_extension_request_result` |
+| `extension_requests.librarian_id` | `librarians.id` | `fk_extension_request_staff` |
 | `extensions.loan_detail_id` | `loan_details.id` | `fk_extensions_detail` |
 | `extensions.librarian_id` | `librarians.id` | `fk_extensions_librarian` |
 | `librarians.account_id` | `accounts.id` | `fk_librarians_account` |

@@ -128,62 +128,6 @@
     "license": "https://unsplash.com/license"
   },
   {
-    "table": "rooms",
-    "id": 3,
-    "path": "/uploads/resources/d1eb614100757b701ece289ff53c5785.jpg",
-    "source": "https://unsplash.com/photos/empty-classroom-khjwIW9HH5s",
-    "author": "Barry Zhou",
-    "license": "https://unsplash.com/license"
-  },
-  {
-    "table": "rooms",
-    "id": 4,
-    "path": "/uploads/resources/d1eb614100757b701ece289ff53c5785.jpg",
-    "source": "https://unsplash.com/photos/empty-classroom-khjwIW9HH5s",
-    "author": "Barry Zhou",
-    "license": "https://unsplash.com/license"
-  },
-  {
-    "table": "rooms",
-    "id": 5,
-    "path": "/uploads/resources/d1eb614100757b701ece289ff53c5785.jpg",
-    "source": "https://unsplash.com/photos/empty-classroom-khjwIW9HH5s",
-    "author": "Barry Zhou",
-    "license": "https://unsplash.com/license"
-  },
-  {
-    "table": "rooms",
-    "id": 6,
-    "path": "/uploads/resources/d1eb614100757b701ece289ff53c5785.jpg",
-    "source": "https://unsplash.com/photos/empty-classroom-khjwIW9HH5s",
-    "author": "Barry Zhou",
-    "license": "https://unsplash.com/license"
-  },
-  {
-    "table": "rooms",
-    "id": 7,
-    "path": "/uploads/resources/d1eb614100757b701ece289ff53c5785.jpg",
-    "source": "https://unsplash.com/photos/empty-classroom-khjwIW9HH5s",
-    "author": "Barry Zhou",
-    "license": "https://unsplash.com/license"
-  },
-  {
-    "table": "rooms",
-    "id": 8,
-    "path": "/uploads/resources/d1eb614100757b701ece289ff53c5785.jpg",
-    "source": "https://unsplash.com/photos/empty-classroom-khjwIW9HH5s",
-    "author": "Barry Zhou",
-    "license": "https://unsplash.com/license"
-  },
-  {
-    "table": "rooms",
-    "id": 9,
-    "path": "/uploads/resources/d1eb614100757b701ece289ff53c5785.jpg",
-    "source": "https://unsplash.com/photos/empty-classroom-khjwIW9HH5s",
-    "author": "Barry Zhou",
-    "license": "https://unsplash.com/license"
-  },
-  {
     "table": "equipment",
     "id": 2,
     "path": "/uploads/resources/32ecccc7c54a2684a2ec9601f14671af.jpg",
@@ -197,22 +141,6 @@
     "path": "/uploads/resources/877d2f547fbcec6655ccd05e26b1ba7e.jpg",
     "source": "https://unsplash.com/photos/black-laptop-computer-on-white-table-SM_hz_zkXxM",
     "author": "Vadim Bozhko",
-    "license": "https://unsplash.com/license"
-  },
-  {
-    "table": "equipment",
-    "id": 7,
-    "path": "/uploads/resources/32ecccc7c54a2684a2ec9601f14671af.jpg",
-    "source": "https://unsplash.com/photos/an-electronic-device-with-a-micro-board-attached-to-it-3d2AY-7uyoI",
-    "author": "Vishnu Mohanan",
-    "license": "https://unsplash.com/license"
-  },
-  {
-    "table": "equipment",
-    "id": 9,
-    "path": "/uploads/resources/32ecccc7c54a2684a2ec9601f14671af.jpg",
-    "source": "https://unsplash.com/photos/an-electronic-device-with-a-micro-board-attached-to-it-3d2AY-7uyoI",
-    "author": "Vishnu Mohanan",
     "license": "https://unsplash.com/license"
   },
   {
@@ -254,5 +182,122 @@
     "author": "Kawê Rodrigues",
     "source": "https://www.pexels.com/photo/man-using-wacom-tablet-and-stylus-on-desk-16313656/",
     "license": "https://www.pexels.com/license/"
+  },
+  {
+    "table": "rooms",
+    "id": 3,
+    "url": "https://images.pexels.com/photos/35571660/pexels-photo-35571660.jpeg?auto=compress&cs=tinysrgb&w=1000",
+    "source": "https://www.pexels.com/photo/computer-classroom-with-focused-students-35571660/",
+    "license": "https://www.pexels.com/license/",
+    "expected_previous": "/uploads/resources/d1eb614100757b701ece289ff53c5785.jpg",
+    "path": "/uploads/resources/b3e2052931131259c1b4c1b92d8bde39.jpg",
+    "resource_name": "Phòng dữ liệu 302 A3"
+  },
+  {
+    "table": "rooms",
+    "id": 4,
+    "url": "https://images.pexels.com/photos/8423439/pexels-photo-8423439.jpeg?auto=compress&cs=tinysrgb&w=1000",
+    "source": "https://www.pexels.com/photo/desks-and-chairs-in-a-classroom-8423439/",
+    "license": "https://www.pexels.com/license/",
+    "expected_previous": "/uploads/resources/d1eb614100757b701ece289ff53c5785.jpg",
+    "path": "/uploads/resources/662a289530d19968474c6f0fa5df3729.jpg",
+    "resource_name": "Phòng học 102 A3"
+  },
+  {
+    "table": "rooms",
+    "id": 5,
+    "url": "https://images.pexels.com/photos/6981007/pexels-photo-6981007.jpeg?auto=compress&cs=tinysrgb&w=1000",
+    "source": "https://www.pexels.com/photo/an-empty-classroom-6981007/",
+    "license": "https://www.pexels.com/license/",
+    "expected_previous": "/uploads/resources/d1eb614100757b701ece289ff53c5785.jpg",
+    "path": "/uploads/resources/716829cc55a1e6d0810825f1438237d9.jpg",
+    "resource_name": "Phòng học 402 A2"
+  },
+  {
+    "table": "rooms",
+    "id": 6,
+    "url": "https://images.pexels.com/photos/5905445/pexels-photo-5905445.jpeg?auto=compress&cs=tinysrgb&w=1000",
+    "source": "https://www.pexels.com/photo/school-bench-with-stationery-in-classroom-5905445/",
+    "license": "https://www.pexels.com/license/",
+    "expected_previous": "/uploads/resources/d1eb614100757b701ece289ff53c5785.jpg",
+    "path": "/uploads/resources/6158bd63327390c816fb1f0004dff7fb.jpg",
+    "resource_name": "Phòng học 401 A2"
+  },
+  {
+    "table": "rooms",
+    "id": 7,
+    "url": "https://images.pexels.com/photos/36834057/pexels-photo-36834057.jpeg?auto=compress&cs=tinysrgb&w=1000",
+    "source": "https://www.pexels.com/photo/modern-empty-lecture-hall-with-blue-seats-36834057/",
+    "license": "https://www.pexels.com/license/",
+    "expected_previous": "/uploads/resources/d1eb614100757b701ece289ff53c5785.jpg",
+    "path": "/uploads/resources/686c94e02b4462a366e9176fe30a461d.jpg",
+    "resource_name": "Phòng học 304 A3"
+  },
+  {
+    "table": "rooms",
+    "id": 8,
+    "url": "https://images.pexels.com/photos/16859956/pexels-photo-16859956.jpeg?auto=compress&cs=tinysrgb&w=1000",
+    "source": "https://www.pexels.com/photo/empty-conference-room-16859956/",
+    "license": "https://www.pexels.com/license/",
+    "expected_previous": "/uploads/resources/d1eb614100757b701ece289ff53c5785.jpg",
+    "path": "/uploads/resources/d48c3f2b60e1058f4e9b3d70093f77fb.jpg",
+    "resource_name": "Phòng học 701 A2"
+  },
+  {
+    "table": "rooms",
+    "id": 9,
+    "url": "https://images.pexels.com/photos/8102300/pexels-photo-8102300.jpeg?auto=compress&cs=tinysrgb&w=1000",
+    "source": "https://www.pexels.com/photo/empty-conference-room-8102300/",
+    "license": "https://www.pexels.com/license/",
+    "expected_previous": "/uploads/resources/d1eb614100757b701ece289ff53c5785.jpg",
+    "path": "/uploads/resources/3c40f1ada21d76e79a48271636dd2bfa.jpg",
+    "resource_name": "Phòng học 501 A2"
+  },
+  {
+    "table": "equipment",
+    "id": 9,
+    "url": "https://images.pexels.com/photos/11447064/pexels-photo-11447064.jpeg?auto=compress&cs=tinysrgb&w=1000",
+    "source": "https://www.pexels.com/photo/electronic-parts-and-wires-11447064/",
+    "license": "https://www.pexels.com/license/",
+    "expected_previous": "/uploads/resources/32ecccc7c54a2684a2ec9601f14671af.jpg",
+    "path": "/uploads/resources/f2064026a620d31ded789657d51aa360.jpg",
+    "resource_name": "Bộ breadboard và linh kiện điện tử"
+  },
+  {
+    "table": "books",
+    "id": 8,
+    "url": "https://covers.openlibrary.org/b/id/8664885-L.jpg?default=false",
+    "source": "https://openlibrary.org/books/OL4907372M",
+    "expected_previous": null,
+    "path": "/uploads/covers/fd4cf53ab879d03056066938032264ed.jpg",
+    "resource_name": "An Introduction to Database Systems"
+  },
+  {
+    "table": "books",
+    "id": 9,
+    "url": "https://covers.openlibrary.org/b/id/4398960-L.jpg?default=false",
+    "source": "https://openlibrary.org/books/OL4416137M",
+    "expected_previous": null,
+    "path": "/uploads/covers/703f7088a4b7d2d59756d356e4d21e2f.jpg",
+    "resource_name": "Principles of Database Systems"
+  },
+  {
+    "table": "books",
+    "id": 23,
+    "path": "/uploads/covers/5aa5019c0e09c0d71bc1f588983e780a.jpg",
+    "source": "storage/ebooks/ptit-e-marketing-2013.pdf, page 1",
+    "expected_previous": null,
+    "resource_name": "E-marketing (Marketing trực tuyến)"
+  },
+  {
+    "table": "equipment",
+    "id": 7,
+    "path": "/uploads/resources/b6859a6131dbd0dc16cd259c58d7944b.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:ESP32_Dev_Board.jpg",
+    "author": "Edwiyanto",
+    "license": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "changes": "Unmodified 500px Wikimedia thumbnail",
+    "expected_previous": "/uploads/resources/32ecccc7c54a2684a2ec9601f14671af.jpg",
+    "resource_name": "Bộ cảm biến IoT ESP32"
   }
 ]

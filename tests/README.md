@@ -1,12 +1,22 @@
 # Regression tests
 
+## Librarian resource deletion
+
+With `NEXUS_DB_NAME=resource_center_test_<digits>` and a PHP server using that isolated database on port 8016, run `python tests/librarian-delete.py`. The suite creates disposable resources and verifies librarian deletion for books, copies, rooms and equipment; student and CSRF rejection; stale version protection; and blocking deletion of a seeded book with an active loan. No production server is used.
+
+## Student renewal requests
+
+Configure `NEXUS_DB_*` for an isolated database named `resource_center_test_<digits>` initialized from the current schema/seed. `php tests/schema-circulation.php` creates a fresh isolated database and prints its name. Set `NEXUS_DB_NAME` to that name, then run `python tests/extension-requests.py` (port 8016 must be free).
+
+The HTTP suite covers student ownership, role/CSRF restrictions, pending uniqueness, unchanged deadlines before approval, librarian approval/rejection, repeated approval, a maximum of three approved renewals, returned books, private request lists, and rejection of the old direct renewal API. It creates fixtures only in that isolated database. `tests/schema-circulation.php` also checks pending uniqueness and rejection of an invalid approved state through direct SQL.
+
 ## Circulation extension
 
-After cloning a dedicated test database and running `php scripts/migrate-circulation.php --apply` against that test database, run `python tests/circulation.py` with the same `NEXUS_DB_*` environment. It starts hidden PHP servers on ports 8014/8015 and tests role/CSRF enforcement, full admin profiles, atomic multi-item counter loans, online-to-receipt links, ownership, returns, inventory reconciliation, stale versions, audit logging and two sessions competing for the last equipment unit. It only accepts `resource_center_test_<digits>`. Fixtures remain in that test database. The JSON result and server log are written under ignored `tests/output/`. Optional `NEXUS_TEST_PASS` changes the demo login password for this test.
+After cloning a dedicated test database and running `php scripts/migrate-circulation.php --apply` against that test database, run `python tests/circulation.py` with the same `NEXUS_DB_*` environment. It starts hidden PHP servers on ports 8014/8015 and tests role/CSRF enforcement, full admin profiles, atomic multi-item counter loans, online-to-receipt links, ownership, returns, stale versions and two sessions competing for the last equipment unit. It only accepts `resource_center_test_<digits>`. Fixtures remain in that test database. The JSON result and server log are written under ignored `tests/output/`. Optional `NEXUS_TEST_PASS` changes the demo login password for this test.
 
 `php tests/schema-circulation.php` creates a new database named `resource_center_test_<timestamp><random>` (refusing an existing name), loads the actual schema/seed, runs the migration twice, verifies inventory balances, and directly checks the new FK, UNIQUE and CHECK protections. It leaves this isolated database for inspection. The local database user therefore needs permission to create test databases. `docs/teacher-demo.sql` contains read-only demonstration queries for Workbench.
 
-`node tests/circulation-ui.cjs` checks the shipped asynchronous inventory/trace renderers with reversed success/error responses and sign-out invalidation. It uses an isolated mocked DOM and deferred API promises; it does not access the browser or database.
+`node tests/circulation-ui.cjs` checks the shipped asynchronous trace renderers with reversed success/error responses and sign-out invalidation. It uses an isolated mocked DOM and deferred API promises; it does not access the browser or database.
 
 ## Existing regression suite
 

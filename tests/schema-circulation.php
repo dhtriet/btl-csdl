@@ -19,7 +19,7 @@ function migrate_for_test(): array {
     return json_decode(implode("\n",$lines),true,512,JSON_THROW_ON_ERROR);
 }
 $first=migrate_for_test();$second=migrate_for_test();
-if ($second['opening_records']!==0 || $second['linked_receipts']!==0) throw new RuntimeException('Migration is not idempotent');
+if ($second['equipment_updated']!==0 || $second['linked_receipts']!==0) throw new RuntimeException('Migration is not idempotent');
 $bad=(int)$p->query('SELECT COUNT(*) FROM equipment e LEFT JOIN (SELECT equipment_id,SUM(quantity) n FROM equipment_loan_details WHERE return_date IS NULL GROUP BY equipment_id) d ON d.equipment_id=e.id WHERE total_quantity<>available_quantity+unavailable_quantity+COALESCE(d.n,0)')->fetchColumn();
 if ($bad) throw new RuntimeException('Fresh stock is unbalanced');
 $sid=(int)$p->query('SELECT id FROM students ORDER BY id LIMIT 1')->fetchColumn();
@@ -35,7 +35,9 @@ try {
     $p->exec("INSERT INTO book_loan_requests (student_id,librarian_id,status) VALUES ($sid,$lid,'approved')");$request=(int)$p->lastInsertId();
     $p->exec("INSERT INTO loan_receipts (student_id,librarian_id,request_id) VALUES ($sid,$lid,$request)");
     $expect("INSERT INTO loan_receipts (student_id,librarian_id,request_id) VALUES ($sid,$lid,$request)",1062);
+    $loan=(int)$p->query('SELECT MIN(id) FROM loan_details')->fetchColumn();
+    $p->exec("INSERT INTO extension_requests (loan_detail_id,old_due_date,requested_due_date) VALUES ($loan,'2026-11-11','2026-11-18')");
+    $expect("INSERT INTO extension_requests (loan_detail_id,old_due_date,requested_due_date) VALUES ($loan,'2026-11-11','2026-11-19')",1062);
+    $expect("UPDATE extension_requests SET status='approved' WHERE loan_detail_id=$loan",3819);
 } finally {$p->rollBack();}
-$standalone=trim(file_get_contents(dirname(__DIR__).'/database/equipment_inventory_adjustments.sql'));
-if (!str_contains(preg_replace('/\s+/',' ',file_get_contents(dirname(__DIR__).'/database/schema.sql')),preg_replace('/\s+/',' ',$standalone))) throw new RuntimeException('Fresh schema and migration inventory DDL differ');
-echo json_encode(['database'=>$name,'tables'=>(int)$p->query('SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE()')->fetchColumn(),'first_opening_records'=>$first['opening_records'],'second_run'=>'no changes','stock_balance'=>'passed','direct_sql_fk_unique_checks'=>'passed','shared_ddl'=>'passed'],JSON_PRETTY_PRINT),PHP_EOL;
+echo json_encode(['database'=>$name,'tables'=>(int)$p->query('SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE()')->fetchColumn(),'equipment_updated'=>$first['equipment_updated'],'second_run'=>'no changes','stock_balance'=>'passed','direct_sql_fk_unique_checks'=>'passed'],JSON_PRETTY_PRINT),PHP_EOL;

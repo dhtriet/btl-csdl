@@ -29,3 +29,23 @@ __pycache__/
 /tests/output/
 .DS_Store
 Thumbs.db
+
+# Curated catalog artwork (other user uploads remain private runtime data).
+!/public/uploads/
+/public/uploads/*
+!/public/uploads/covers/
+/public/uploads/covers/*
+!/public/uploads/resources/
+/public/uploads/resources/*
+!/public/uploads/resources/b3e2052931131259c1b4c1b92d8bde39.jpg
+!/public/uploads/resources/662a289530d19968474c6f0fa5df3729.jpg
+!/public/uploads/resources/716829cc55a1e6d0810825f1438237d9.jpg
+!/public/uploads/resources/6158bd63327390c816fb1f0004dff7fb.jpg
+!/public/uploads/resources/686c94e02b4462a366e9176fe30a461d.jpg
+!/public/uploads/resources/d48c3f2b60e1058f4e9b3d70093f77fb.jpg
+!/public/uploads/resources/3c40f1ada21d76e79a48271636dd2bfa.jpg
+!/public/uploads/resources/f2064026a620d31ded789657d51aa360.jpg
+!/public/uploads/covers/fd4cf53ab879d03056066938032264ed.jpg
+!/public/uploads/covers/703f7088a4b7d2d59756d356e4d21e2f.jpg
+!/public/uploads/covers/5aa5019c0e09c0d71bc1f588983e780a.jpg
+!/public/uploads/resources/b6859a6131dbd0dc16cd259c58d7944b.jpg

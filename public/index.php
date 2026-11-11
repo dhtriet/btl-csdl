@@ -14,6 +14,7 @@ require_once __DIR__ . '/../app/resources.php';
 require_once __DIR__ . '/../app/queries/books.php';
 require_once __DIR__ . '/../app/assistant.php';
 require_once __DIR__ . '/../app/circulation.php';
+require_once __DIR__ . '/../app/extension_requests.php';
 
 final class ApiException extends RuntimeException
 {
@@ -184,8 +185,15 @@ function route_api(PDO $pdo, string $method, array $segments): void
     }
 
     if ($resource === 'loan-details' && $method === 'POST' && ctype_digit((string) $id) && $childId === 'extend') {
-        json_response(['data' => extend_book_loan($pdo, (int) $id)]);
+        throw new ApiException('Gia hạn cần có yêu cầu của sinh viên và được thủ thư duyệt.',403);
     }
+
+    if ($resource==='extension-requests' && $method==='GET') json_response(['data'=>extension_requests_list($pdo)]);
+    if ($resource==='extension-requests' && $method==='POST' && $id===null) {
+        $body=request_body();
+        json_response(['data'=>extension_request_create($pdo,resource_int($body,'loan_detail_id',1,PHP_INT_MAX),$body)],201);
+    }
+    if ($resource==='extension-requests' && $method==='POST' && ctype_digit((string)$id) && $childId==='review') json_response(['data'=>extension_request_review($pdo,(int)$id,request_body())]);
 
     if ($resource === 'book-loan-requests' && $method === 'POST') {
         json_response(['data' => create_book_loan_request($pdo)], 201);
@@ -1502,82 +1510,6 @@ function mark_equipment_return(PDO $pdo, int $equipmentDetailId): array
     }
 }
 
-function extend_book_loan(PDO $pdo, int $loanDetailId): array
-{
-    $librarian = require_role('librarian');
-    if (empty($librarian['librarian_id'])) {
-        throw new ApiException('Khong tim thay thong tin thu thu.', 403);
-    }
-
-    $body = request_body();
-    $newDueDate = trim((string) ($body['new_due_date'] ?? ''));
-    $date = DateTime::createFromFormat('!Y-m-d', $newDueDate);
-    if (!$date || $date->format('Y-m-d') !== $newDueDate) {
-        throw new ApiException('Han tra moi khong hop le.');
-    }
-
-    $pdo->beginTransaction();
-    try {
-        $detail = $pdo->prepare(
-            "SELECT ld.id, ld.due_date, ld.return_date, ld.extension_count,
-                    b.title, s.student_code, a.full_name AS student_name
-             FROM loan_details ld
-             JOIN loan_receipts lr ON lr.id = ld.receipt_id
-             JOIN book_copies c ON c.id = ld.copy_id
-             JOIN books b ON b.id = c.book_id
-             JOIN students s ON s.id = lr.student_id
-             JOIN accounts a ON a.id = s.account_id
-             WHERE ld.id = :id
-             FOR UPDATE"
-        );
-        $detail->execute(['id' => $loanDetailId]);
-        $loan = $detail->fetch();
-        if (!$loan) {
-            throw new ApiException('Khong tim thay chi tiet phieu muon sach.', 404);
-        }
-        if ($loan['return_date'] !== null) {
-            throw new ApiException('Sach da duoc tra, khong the gia han.');
-        }
-        if ($newDueDate <= $loan['due_date']) {
-            throw new ApiException('Han tra moi phai sau han tra hien tai.');
-        }
-        if ((int) $loan['extension_count'] >= 3) {
-            throw new ApiException('Moi cuon sach chi duoc gia han toi da 3 lan.');
-        }
-
-        $extension = $pdo->prepare(
-            'INSERT INTO extensions (loan_detail_id, librarian_id, old_due_date, new_due_date, extension_date)
-             VALUES (:loan_detail_id, :librarian_id, :old_due_date, :new_due_date, CURDATE())'
-        );
-        $extension->execute([
-            'loan_detail_id' => $loanDetailId,
-            'librarian_id' => $librarian['librarian_id'],
-            'old_due_date' => $loan['due_date'],
-            'new_due_date' => $newDueDate,
-        ]);
-
-        $update = $pdo->prepare(
-            "UPDATE loan_details
-             SET due_date = :new_due_date, extension_count = extension_count + 1, status = 'borrowed'
-             WHERE id = :id"
-        );
-        $update->execute(['new_due_date' => $newDueDate, 'id' => $loanDetailId]);
-        $pdo->commit();
-
-        return [
-            'loan_detail_id' => $loanDetailId,
-            'title' => $loan['title'],
-            'student_name' => $loan['student_name'],
-            'new_due_date' => $newDueDate,
-            'extension_count' => (int) $loan['extension_count'] + 1,
-        ];
-    } catch (Throwable $exception) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
-        throw $exception;
-    }
-}
 
 function student_history(PDO $pdo, string $studentCode): array
 {
@@ -1595,7 +1527,7 @@ function student_history(PDO $pdo, string $studentCode): array
     }
 
     $books = $pdo->prepare(
-        "SELECT 'book' AS resource_type, lr.id AS receipt_id, b.title AS resource_name,
+        "SELECT 'book' AS resource_type, lr.id AS receipt_id, ld.id AS loan_detail_id, b.title AS resource_name,
                 ld.borrow_date, ld.due_date, ld.return_date, ld.extension_count,
                 CASE WHEN ld.return_date IS NULL AND ld.due_date < CURDATE() THEN 'Qua han'
                      WHEN ld.return_date IS NULL THEN 'Dang muon'

@@ -1,9 +1,8 @@
-const deskState = { resources: [], inventory: [], selectedInventory: null, counterBusy: false, resourceSerial: 0, accountSerial: 0, inventorySerial: 0, traceSerial: 0 };
+const deskState = { resources: [], counterBusy: false, resourceSerial: 0, accountSerial: 0, traceSerial: 0 };
 
 function configureCirculationDesk() {
   deskState.accountSerial++;
   deskState.resourceSerial++;
-  deskState.inventorySerial++;
   deskState.traceSerial++;
   const librarian = state.user?.role === 'librarian';
   $('#counter-desk').classList.toggle('is-hidden', !librarian);
@@ -12,9 +11,6 @@ function configureCirculationDesk() {
   $('#request-trace-result').textContent = '';
   $('#account-full-panel').classList.add('is-hidden');
   $('#account-full-content').textContent = '';
-  $('#inventory-workspace').classList.add('is-hidden');
-  $('#inventory-editor').textContent = '';
-  deskState.selectedInventory = null;
 }
 
 function deskTable(caption, headers, rows) {
@@ -64,29 +60,6 @@ async function showRequestTrace(type, id) {
   } catch(error) { if(serial===deskState.traceSerial && state.user) showError(target,error.message); }
 }
 
-async function loadInventory() {
-  $('#inventory-workspace').classList.remove('is-hidden');
-  $('#inventory-list').innerHTML='<p role="status">Đang đối soát tồn kho…</p>';
-  try {
-    const {data}=await api('/api/circulation/inventory'); deskState.inventory=data;
-    $('#inventory-list').innerHTML=deskTable('Số lượng theo thiết bị',['Thiết bị','Tổng','Sẵn sàng','Đang mượn','Không khả dụng','Kiểm kê',''],data.map(row=>[escapeHtml(row.name),String(Number(row.total_quantity)),String(Number(row.available_quantity)),String(Number(row.on_loan_quantity)),String(Number(row.unavailable_quantity)),row.difference?`<span class="inventory-warning">Lệch ${Number(row.difference)}</span>`:row.inventory_verified_at?escapeHtml(formatDateTime(row.inventory_verified_at)):'<span class="inventory-warning">Chờ kiểm kê thực tế</span>',`<button type="button" class="text-button" data-inventory-id="${Number(row.id)}">Đối soát</button>`]));
-  } catch(error) { showError($('#inventory-list'),error.message); }
-}
-
-async function editInventory(id) {
-  const item=deskState.inventory.find(row=>Number(row.id)===id);
-  if(!item) return;
-  const serial=++deskState.inventorySerial;
-  deskState.selectedInventory=item;
-  $('#inventory-editor').innerHTML=`<h3 id="inventory-heading" tabindex="-1">Kiểm kê ${escapeHtml(item.name)}</h3><p>Đang mượn: <strong>${Number(item.on_loan_quantity)}</strong>. Nhập số thực tế và lý do, sau đó xác nhận đối soát.</p><form id="inventory-form" class="stack-form desk-form"><div class="desk-fields"><label>Tổng sau kiểm kê<input name="total_quantity" type="number" min="1" step="1" max="1000000" value="${Number(item.total_quantity)}" required></label><label>Số sẵn sàng thực tế<input name="available_quantity" type="number" min="0" step="1" max="1000000" value="${Number(item.available_quantity)}" required></label><label>Số không khả dụng<input name="unavailable_quantity" type="number" min="0" step="1" max="1000000" value="${Number(item.unavailable_quantity)}" required></label></div><label>Lý do / kết quả kiểm kê<textarea name="reason" rows="3" maxlength="1000" required placeholder="Ghi rõ số hỏng, bảo trì, thất lạc hoặc lý do điều chỉnh…"></textarea></label><p>Tổng phải bằng sẵn sàng + ${Number(item.on_loan_quantity)} đang mượn + không khả dụng.</p><div id="inventory-error" role="status"></div><button class="primary-button" type="submit">Xác nhận đối soát</button></form><div id="inventory-history"></div>`;
-  $('#inventory-heading').focus();
-  try {
-    const {data}=await api(`/api/circulation/inventory/${id}`);
-    if(serial!==deskState.inventorySerial || deskState.selectedInventory?.id!==item.id) return;
-    $('#inventory-history').innerHTML=deskTable('Lịch sử điều chỉnh (100 lần gần nhất)',['Thời điểm / người ghi','Trước → sau (tổng / sẵn sàng / không khả dụng)','Đang mượn','Lý do'],data.map(h=>[`${escapeHtml(formatDateTime(h.created_at))}<br>${escapeHtml(h.actor_name||'Chuyển đổi dữ liệu')}`,`${h.old_total} / ${h.old_available} / ${h.old_unavailable}<br>→ ${h.new_total} / ${h.new_available} / ${h.new_unavailable}`,String(Number(h.on_loan_quantity)),escapeHtml(h.reason)]));
-  } catch(error) { if(serial===deskState.inventorySerial && deskState.selectedInventory?.id===item.id) showError($('#inventory-history'),error.message); }
-}
-
 async function loadCounterResources() {
   const serial=++deskState.resourceSerial;
   const submit=$('#counter-loan-form button[type=submit]'); submit.disabled=true;
@@ -131,23 +104,12 @@ $('#counter-loan-form').addEventListener('submit',async event=>{
 });
 
 $('#request-trace-form').addEventListener('submit',event=>{event.preventDefault();const form=event.currentTarget;showRequestTrace(form.elements.type.value,form.elements.request_id.value);});
-$('#inventory-load').addEventListener('click',loadInventory);
 $('#account-full-close').addEventListener('click',()=>{deskState.accountSerial++;$('#account-full-panel').classList.add('is-hidden');$('#account-table button')?.focus();});
 document.addEventListener('click',event=>{
   const account=event.target.closest('[data-account-detail]'); if(account) openAccountFull(account.dataset.accountDetail);
-  const inventory=event.target.closest('[data-inventory-id]'); if(inventory) editInventory(Number(inventory.dataset.inventoryId));
   const receipt=event.target.closest('[data-desk-receipt]'); if(receipt) openLoanReceiptDetail(receipt.dataset.deskReceipt);
   const trace=event.target.closest('[data-desk-trace]');
   if(trace){const [type,id]=trace.dataset.deskTrace.split(':');setView('circulation',{focus:true});$('#request-trace-form').elements.type.value=type;$('#request-trace-form').elements.request_id.value=id;showRequestTrace(type,id);}
   const remove=event.target.closest('[data-counter-remove]'); if(remove) remove.closest('.counter-line').remove();
-});
-document.addEventListener('submit',async event=>{
-  if(event.target.id!=='inventory-form') return;
-  event.preventDefault(); const form=event.target, button=form.querySelector('[type=submit]'); button.disabled=true;
-  const item=deskState.selectedInventory;
-  try {
-    await api(`/api/circulation/inventory/${item.id}`,{method:'POST',body:JSON.stringify({total_quantity:Number(form.elements.total_quantity.value),available_quantity:Number(form.elements.available_quantity.value),unavailable_quantity:Number(form.elements.unavailable_quantity.value),reason:form.elements.reason.value,version:item.version})});
-    await loadInventory(); await editInventory(Number(item.id)); showToast('Đã đối soát và lưu lịch sử điều chỉnh.');
-  } catch(error){showError($('#inventory-error'),error.message);} finally {button.disabled=false;}
 });
 if(state.user) configureCirculationDesk();

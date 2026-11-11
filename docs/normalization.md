@@ -2,14 +2,14 @@
 
 ## 1. Bối cảnh và phạm vi
 
-Nexus quản lý tài nguyên học tập tại **một trung tâm**: sách vật lý, PDF, phòng và thiết bị. Sinh viên tìm tài nguyên, gửi yêu cầu và xem lịch sử của mình. Thủ thư duyệt yêu cầu, lập phiếu trực tiếp tại quầy, nhận trả và gia hạn. Quản trị viên xem đầy đủ hồ sơ tài khoản và quản lý tài nguyên. Thủ thư và quản trị viên được đối soát thiết bị, có lưu người ghi và lý do.
+Nexus quản lý tài nguyên học tập tại **một trung tâm**: sách vật lý, PDF, phòng và thiết bị. Sinh viên tìm tài nguyên, gửi yêu cầu và xem lịch sử của mình. Thủ thư duyệt yêu cầu, lập phiếu trực tiếp tại quầy, nhận trả và xét yêu cầu gia hạn do sinh viên gửi. Quản trị viên xem đầy đủ hồ sơ tài khoản và quản lý tài nguyên.
 
 Phạm vi hiện tại không có nghiệp vụ lương, nhiều chi nhánh, phạt tiền hoặc hàng đợi giữ chỗ đầu sách. Đặt phòng là giữ một phòng trong khung giờ; yêu cầu mượn sách là đề nghị cấp các bản vật lý, chưa giữ chỗ trong hàng đợi. Mỗi tài khoản có một điện thoại và một địa chỉ liên hệ; nếu thay đổi yêu cầu thành nhiều địa chỉ/số điện thoại, cần thêm các quan hệ liên hệ tương ứng.
 
 ## 2. Nguồn mô hình dùng trong báo cáo và slide
 
 1. `database/schema.sql`: khởi tạo mới, 26 bảng nghiệp vụ.
-2. `scripts/migrate-circulation.php`: nâng cấp dữ liệu cũ, sao lưu trước DDL, tạo số dư kiểm kê ban đầu và nối phiếu cũ khi có bằng chứng duy nhất.
+2. `scripts/migrate-circulation.php`: nâng cấp dữ liệu cũ, sao lưu trước DDL, khởi tạo số lượng không khả dụng và nối phiếu cũ khi có bằng chứng duy nhất.
 3. [database-schema.md](database-schema.md): từ điển tất cả thuộc tính, khóa và CHECK của CSDL đang chạy.
 4. [database-erd.mmd](database-erd.mmd): ERD Mermaid sinh từ cùng metadata với từ điển. Nhập tệp này vào công cụ Mermaid để xuất hình cho báo cáo và slide.
 
@@ -60,16 +60,14 @@ Loại các phụ thuộc bắc cầu: thông tin sinh viên đi qua `student_id
 | `loan_details`, `equipment_loan_details` | `id →` thông tin từng lượt cấp phát; mã bản sách không duy nhất qua toàn bộ lịch sử |
 | `room_requests` | `id →` lịch đặt; bộ phòng/ngày/giờ không được tự động coi là khóa khi có yêu cầu bị từ chối/hủy |
 | `extensions` | `id → loan_detail_id, librarian_id, old_due_date, new_due_date, extension_date` |
-| `equipment_inventory_adjustments` | `id →` ảnh chụp số trước/sau, người ghi, thời điểm và lý do; ghi đầu kỳ mỗi thiết bị tối đa một lần |
 
 ### BCNF và các ngoại lệ triển khai
 
 Đối với các quan hệ danh mục/bảng nối chỉ có các phụ thuộc hàm đã nêu, các định thức là khóa ứng viên nên có thể lập luận BCNF theo giả thiết nghiệp vụ đó. **Không tuyên bố toàn bộ CSDL vật lý đạt BCNF một cách tuyệt đối**:
 
 - `return_status`, `late_days` được suy ra từ ngày trả/hạn trả; `extension_count` là số đếm lưu sẵn. Đây là phi chuẩn hóa có kiểm soát; CHECK đảm bảo kết quả trả/ngày trễ khớp ngày, transaction cập nhật gia hạn cùng lịch sử.
-- `equipment.available_quantity` và `unavailable_quantity` là số dư lưu sẵn. Số đang mượn tính từ chi tiết chưa trả, đối soát kiểm tra phương trình cân bằng và ghi nhật ký. CHECK trong một dòng không thể tự chứng minh tổng trên nhiều bảng.
-- Nhật ký kiểm kê giữ cả các số trước/sau và tổng để tái hiện sự kiện. Đây là ảnh chụp kiểm toán có chủ đích; không dùng bảng nhật ký thay nguồn tồn kho hiện tại.
-- `active_copy_id` và `opening_equipment_id` là cột kỹ thuật GENERATED cho ràng buộc duy nhất có điều kiện; không phải thuộc tính nghiệp vụ độc lập.
+- `equipment.available_quantity` và `unavailable_quantity` là số dư lưu sẵn. Số đang mượn tính từ chi tiết chưa trả, transaction nghiệp vụ kiểm tra phương trình cân bằng. CHECK trong một dòng không thể tự chứng minh tổng trên nhiều bảng.
+- `active_copy_id` và `pending_loan_id` là cột kỹ thuật GENERATED cho ràng buộc duy nhất có điều kiện; không phải thuộc tính nghiệp vụ độc lập.
 - `rooms.included_equipment` là văn bản mô tả tiện ích, không dùng để hạch toán thiết bị. Nếu quản lý số lượng thiết bị cấp cho từng phòng, cần thiết kế quan hệ `room_equipment` và nghiệp vụ điều chuyển tương ứng.
 
 Khi cô yêu cầu mô hình 3NF/BCNF thuần túy, trình bày mô hình logic bỏ các số suy diễn và dùng truy vấn/view tính chúng; chỉ rõ ánh xạ từ mô hình logic sang các cột triển khai nêu trên. Số 26 bảng là số bảng vật lý hiện hành, không phải một bằng chứng đạt dạng chuẩn.
@@ -88,16 +86,15 @@ Hệ thống dùng surrogate key `id` cho các bản sách, dòng phiếu và d�
 | Liên kết phiếu, sinh viên, sách, yêu cầu hợp lệ | FK; liên kết yêu cầu–phiếu có UNIQUE |
 | Số lượng dương, hạn trả hợp lệ, kết quả trả khớp ngày | CHECK trong schema và kiểm tra API |
 | Một bản chỉ có một lượt mượn chưa trả | GENERATED `active_copy_id` + UNIQUE |
-| Một lần mở số dư đầu kỳ cho thiết bị | GENERATED `opening_equipment_id` + UNIQUE |
 | Không vượt tồn, không trùng phòng khi duyệt | Transaction + khóa dòng `FOR UPDATE` + kiểm tra tại thời điểm duyệt |
-| Tổng các nhóm thiết bị khớp | Kiểm tra aggregate trong transaction đối soát; CHECK chặn sẵn sàng + không khả dụng vượt tổng |
+| Tổng các nhóm thiết bị khớp | Kiểm tra aggregate trong transaction mượn trả/cập nhật thiết bị; CHECK chặn sẵn sàng + không khả dụng vượt tổng |
 | Đúng người / vai trò / CSRF | Kiểm tra phía server; không phụ thuộc nút ẩn trên giao diện |
 
 Khóa ngoại yêu cầu–phiếu không tự kiểm chứng tất cả thuộc tính lặp như sinh viên, thủ thư và trạng thái đã duyệt. Luồng cấp phát chỉ lấy các mã này từ yêu cầu đang khóa, không nhận chúng từ client để ghi phiếu.
 
 ## 7. Di chuyển dữ liệu cũ
 
-Migration sao lưu toàn bộ CSDL trước DDL. Phần thiếu giữa tổng, sẵn sàng và đang mượn được ghi vào nhóm **không khả dụng chưa xác minh**, không gán nguyên nhân hỏng/thất lạc khi chưa kiểm kê. Nhật ký giữ các số trước/sau và `inventory_verified_at` vẫn NULL. Thủ thư/admin kiểm kê thực tế rồi ghi lý do để xác nhận.
+Migration sao lưu toàn bộ CSDL trước DDL. Phần thiếu giữa tổng, sẵn sàng và đang mượn được giữ trong số không khả dụng; không tự gán nguyên nhân hỏng hoặc thất lạc.
 
 Liên kết phiếu cũ chỉ được khôi phục từ ghi chú do hệ thống tạo nếu tìm đúng một phiếu, cùng sinh viên, cùng thủ thư, yêu cầu đã duyệt và chưa được liên kết. Trường hợp không đủ bằng chứng giữ NULL và báo cần rà soát. Phiếu mới luôn lưu FK rõ ràng. Không giả lập một yêu cầu lịch sử để lấp dữ liệu.
 
@@ -107,8 +104,7 @@ Liên kết phiếu cũ chỉ được khôi phục từ ghi chú do hệ thốn
 2. Đăng nhập thủ thư → Mượn & trả → Lập phiếu mượn tại quầy. Chọn sinh viên, hai đầu sách, mỗi dòng có số lượng/hạn trả. Lập phiếu và truy vết để xem mã bản vật lý đã giao.
 3. Sinh viên gửi yêu cầu trực tuyến → thủ thư duyệt → truy vết mã yêu cầu. Giải thích nguồn online/counter và FK `request_id`.
 4. Nhận trả một bản, mở lại chi tiết phiếu để thấy người mượn, mã vạch, ngày trả và trạng thái từng bản. Trả hết thì phiếu hoàn tất.
-5. Quản lý tài nguyên → Mở đối soát → chọn thiết bị. Trình bày sẵn sàng/đang mượn/không khả dụng, số chưa xác minh và nhật ký. Nhập số khớp với kiểm kê thực tế, ghi rõ lý do, xác nhận.
-6. Trên CSDL test, thử số lượng 0, vượt tồn, trả hai lần, hai lượt tranh bản cuối, đối soát bằng phiên bản cũ; giải thích lỗi/rollback và ràng buộc gây chặn.
+6. Trên CSDL test, thử số lượng 0, vượt tồn, trả hai lần, hai lượt tranh bản cuối, sửa bằng phiên bản cũ; giải thích lỗi/rollback và ràng buộc gây chặn.
 7. Mở metadata MySQL, từ điển dữ liệu và ERD cùng phiên bản. Giải thích các bước chuẩn hóa bằng một phiếu ví dụ và nêu rõ các cột suy diễn triển khai.
 
-Kiểm thử có ghi dữ liệu chỉ chạy trong `resource_center_test_<digits>`; xem `tests/README.md`. Các thao tác kiểm kê dữ liệu thật cần số đếm thực tế và lý do do nhân viên xác nhận.
+Kiểm thử có ghi dữ liệu chỉ chạy trong `resource_center_test_<digits>`; xem `tests/README.md`.

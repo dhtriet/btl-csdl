@@ -5,7 +5,6 @@ CREATE DATABASE IF NOT EXISTS resource_center
 USE resource_center;
 
 SET FOREIGN_KEY_CHECKS = 0;
-DROP TABLE IF EXISTS equipment_inventory_adjustments;
 
 DROP TABLE IF EXISTS equipment_loan_request_items;
 DROP TABLE IF EXISTS equipment_loan_requests;
@@ -14,6 +13,7 @@ DROP TABLE IF EXISTS book_loan_requests;
 DROP TABLE IF EXISTS equipment_loan_details;
 DROP TABLE IF EXISTS equipment_loans;
 DROP TABLE IF EXISTS room_requests;
+DROP TABLE IF EXISTS extension_requests;
 DROP TABLE IF EXISTS extensions;
 DROP TABLE IF EXISTS loan_details;
 DROP TABLE IF EXISTS loan_receipts;
@@ -224,6 +224,31 @@ CREATE TABLE extensions (
     CONSTRAINT fk_extensions_librarian FOREIGN KEY (librarian_id) REFERENCES librarians(id)
 ) ENGINE=InnoDB;
 
+CREATE TABLE extension_requests (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    loan_detail_id INT UNSIGNED NOT NULL,
+    old_due_date DATE NOT NULL,
+    requested_due_date DATE NOT NULL,
+    reason VARCHAR(500) NOT NULL DEFAULT '',
+    status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+    requested_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    librarian_id INT UNSIGNED NULL,
+    reviewed_at DATETIME NULL,
+    review_note VARCHAR(500) NULL,
+    extension_id INT UNSIGNED NULL UNIQUE,
+    pending_loan_id INT UNSIGNED GENERATED ALWAYS AS (CASE WHEN status='pending' THEN loan_detail_id ELSE NULL END) STORED,
+    UNIQUE KEY uq_extension_pending (pending_loan_id),
+    CONSTRAINT fk_extension_request_loan FOREIGN KEY (loan_detail_id) REFERENCES loan_details(id),
+    CONSTRAINT fk_extension_request_staff FOREIGN KEY (librarian_id) REFERENCES librarians(id),
+    CONSTRAINT fk_extension_request_result FOREIGN KEY (extension_id) REFERENCES extensions(id),
+    CONSTRAINT chk_extension_request_dates CHECK (requested_due_date > old_due_date),
+    CONSTRAINT chk_extension_request_review CHECK (
+        (status='pending' AND librarian_id IS NULL AND reviewed_at IS NULL AND extension_id IS NULL)
+        OR (status='approved' AND librarian_id IS NOT NULL AND reviewed_at IS NOT NULL AND extension_id IS NOT NULL)
+        OR (status='rejected' AND librarian_id IS NOT NULL AND reviewed_at IS NOT NULL AND extension_id IS NULL)
+    )
+) ENGINE=InnoDB;
+
 CREATE TABLE rooms (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     is_visible TINYINT(1) NOT NULL DEFAULT 1,
@@ -273,7 +298,6 @@ CREATE TABLE equipment (
     total_quantity INT UNSIGNED NOT NULL DEFAULT 1,
     available_quantity INT UNSIGNED NOT NULL DEFAULT 1,
     unavailable_quantity INT UNSIGNED NOT NULL DEFAULT 0,
-    inventory_verified_at DATETIME NULL,
     storage_location VARCHAR(160) NULL,
     serial_number VARCHAR(120) NULL,
     status ENUM('available', 'borrowed', 'maintenance', 'damaged', 'unavailable') NOT NULL DEFAULT 'available',
@@ -357,27 +381,5 @@ ALTER TABLE `equipment_loan_details` ADD CONSTRAINT `chk_equipment_return_state`
 ALTER TABLE `equipment_loan_details` ADD CONSTRAINT `chk_equipment_return_result` CHECK (return_date IS NULL OR (late_days=GREATEST(DATEDIFF(return_date,due_date),0) AND return_status=IF(return_date>due_date,'late','on_time')));
 ALTER TABLE loan_details ADD COLUMN active_copy_id INT UNSIGNED GENERATED ALWAYS AS (CASE WHEN return_date IS NULL THEN copy_id ELSE NULL END) VIRTUAL, ADD UNIQUE KEY uq_loan_details_active_copy(active_copy_id);
 ALTER TABLE equipment ADD CONSTRAINT chk_equipment_stock_buckets CHECK (available_quantity + unavailable_quantity <= total_quantity);
-
-CREATE TABLE IF NOT EXISTS equipment_inventory_adjustments (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    equipment_id INT UNSIGNED NOT NULL,
-    actor_account_id INT UNSIGNED NULL,
-    event_type ENUM('opening','reconciliation','adjustment') NOT NULL,
-    old_total INT UNSIGNED NOT NULL,
-    old_available INT UNSIGNED NOT NULL,
-    old_unavailable INT UNSIGNED NOT NULL,
-    new_total INT UNSIGNED NOT NULL,
-    new_available INT UNSIGNED NOT NULL,
-    new_unavailable INT UNSIGNED NOT NULL,
-    on_loan_quantity INT UNSIGNED NOT NULL,
-    reason VARCHAR(1000) NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    opening_equipment_id INT UNSIGNED GENERATED ALWAYS AS (CASE WHEN event_type='opening' THEN equipment_id ELSE NULL END) VIRTUAL,
-    UNIQUE KEY uq_inventory_opening (opening_equipment_id),
-    CONSTRAINT fk_inventory_equipment FOREIGN KEY (equipment_id) REFERENCES equipment(id),
-    CONSTRAINT fk_inventory_actor FOREIGN KEY (actor_account_id) REFERENCES accounts(id),
-    CONSTRAINT chk_inventory_balance CHECK (new_total > 0 AND new_total = new_available + new_unavailable + on_loan_quantity),
-    CONSTRAINT chk_inventory_reason CHECK (CHAR_LENGTH(TRIM(reason)) > 0)
-) ENGINE=InnoDB;
 
 SET FOREIGN_KEY_CHECKS = 1;

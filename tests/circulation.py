@@ -58,7 +58,7 @@ with (output / 'circulation-server.log').open('w', encoding='utf-8') as log:
         anon = Client()
         anon.call('/api/circulation/inventory', expected=401)
         admin, staff, student, other = [Client().login(name) for name in ['user1', 'user2', 'user3', 'user4']]
-        student.call('/api/circulation/inventory', expected=403)
+        student.call('/api/circulation/inventory', expected=404)
         staff.call(f'/api/accounts/{student.user["id"]}', expected=403)
         profile = admin.call(f'/api/accounts/{student.user["id"]}')
         assert {'phone', 'address', 'date_of_birth', 'faculty', 'class_name'} <= profile['profile'].keys()
@@ -110,29 +110,19 @@ with (output / 'circulation-server.log').open('w', encoding='utf-8') as log:
             staff.call(f'/api/returns/books/{detail["id"]}', 'POST', {'condition_on_return': 'good'})
         loan = staff.call('/api/circulation/counter-loans', 'POST', {'type': 'equipment', 'student_code': reader_code, 'items': [{'equipment_id': equipment['id'], 'quantity': 2, 'requested_due_date': due}]}, 201)
         def stock():
-            return next(row for row in admin.call('/api/circulation/inventory') if row['id'] == equipment['id'])
+            return admin.call(f'/api/manage/equipment/{equipment["id"]}')
         before = stock()
-        assert (before['available_quantity'], before['on_loan_quantity'], before['unavailable_quantity'], before['difference']) == (3, 2, 0, 0)
-        reconcile = {'total_quantity': 5, 'available_quantity': 2, 'unavailable_quantity': 1, 'reason': 'TEST kiểm kê một đơn vị không khả dụng', 'version': before['version']}
-        student.call(f'/api/circulation/inventory/{equipment["id"]}', 'POST', reconcile, 403)
-        admin.call(f'/api/circulation/inventory/{equipment["id"]}', 'POST', {**reconcile, 'reason': ''}, 422)
-        admin.call(f'/api/circulation/inventory/{equipment["id"]}', 'POST', {**reconcile, 'available_quantity': 5}, 422)
-        verified = admin.call(f'/api/circulation/inventory/{equipment["id"]}', 'POST', reconcile)
-        assert verified['inventory_verified_at'] and verified['difference'] == 0
-        admin.call(f'/api/circulation/inventory/{equipment["id"]}', 'POST', reconcile, 409)
-        history = staff.call(f'/api/circulation/inventory/{equipment["id"]}')
-        assert history[0]['actor_account_id'] == admin.user['id'] and history[0]['reason'] == reconcile['reason']
+        assert (before['available_quantity'], before['unavailable_quantity']) == (3, 0)
         eq_trace = student.call(f'/api/circulation/trace/equipment/{loan["id"]}')
         assert eq_trace['receipt_id'] == loan['loan_id'] and eq_trace['details'][0]['quantity'] == 2
         other.call(f'/api/circulation/trace/equipment/{loan["id"]}', expected=403)
         staff.call(f'/api/returns/equipment/{eq_trace["details"][0]["id"]}', 'POST', {'condition_on_return': 'Tot'})
         after = stock()
-        assert (after['available_quantity'], after['on_loan_quantity'], after['unavailable_quantity'], after['difference']) == (4, 0, 1, 0)
-        # General resource quantity edits are also recorded in the ledger.
+        assert (after['available_quantity'], after['unavailable_quantity']) == (5, 0)
+        # Quantity edits remain available without the removed reconciliation ledger.
         old = admin.call(f'/api/manage/equipment/{equipment["id"]}')
         admin.call(f'/api/manage/equipment/{equipment["id"]}', 'PUT', {**old, 'total_quantity': 6})
-        assert staff.call(f'/api/circulation/inventory/{equipment["id"]}')[0]['event_type'] == 'adjustment'
-        assert stock()['difference'] == 0
+        assert stock()['available_quantity'] == 6
         # Two independent servers/sessions compete for the final equipment unit.
         final_unit = admin.call('/api/manage/equipment', 'POST', {'name': f'COUNTER_RACE_{stamp}', 'equipment_type': 'TEST', 'total_quantity': 1, 'status': 'available'}, 201)
         second_server = subprocess.Popen([os.environ.get('NEXUS_PHP', 'php'), '-S', '127.0.0.1:8015', '-t', 'public'], cwd=root, stdout=log, stderr=log, creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
@@ -159,8 +149,8 @@ with (output / 'circulation-server.log').open('w', encoding='utf-8') as log:
             gate.stdin.write('\n'); gate.stdin.flush(); gate.wait(timeout=10)
             responses = [future.result() for future in futures]
         assert sum(code == 201 for code, _ in responses) == 1 and all(code in (201, 409, 422) for code, _ in responses), responses
-        race_stock = next(row for row in admin.call('/api/circulation/inventory') if row['id'] == final_unit['id'])
-        assert (race_stock['available_quantity'], race_stock['on_loan_quantity'], race_stock['difference']) == (0, 1, 0)
+        race_stock = admin.call(f'/api/manage/equipment/{final_unit["id"]}')
+        assert race_stock['available_quantity'] == 0 and race_stock['unavailable_quantity'] == 0
         winner = next(result['data'] for code, result in responses if code == 201)
         race_trace = student.call(f'/api/circulation/trace/equipment/{winner["id"]}')
         staff.call(f'/api/returns/equipment/{race_trace["details"][0]["id"]}', 'POST', {'condition_on_return': 'Tot'})
