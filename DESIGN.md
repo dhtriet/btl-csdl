@@ -142,7 +142,7 @@ Learning-kit section-heading remains the result heading; title is the smaller pa
 
 Preserve the existing shell and spacing. At wide desktop sizes the labelled sidebar is 220px, main inline padding 44px, header 88px and content cap 1720px. The student workspace has a flexible main column and a 296px personal activity column, separated by a ruled gutter of 32px. The reskin changes material and color without moving or replacing components.
 
-At 761–1279px the incumbent sidebar is 200px, main padding 26px and personal column 245px. At 1000px and below the workspace columns stack; the Pink Glam skin starts at 1000px, so exactly 1000px retains that stacked composition with the new skin. At 760px and below the existing single-column shell, 20px inline padding, menu toggle and expanded two-column navigation remain. The greeting retains its 36px intermediate and 34px mobile sizes.
+At 761–1279px the incumbent sidebar is 200px, main padding 26px and personal column 245px. At 1000px and below the workspace columns stack; the Pink Glam palette applies at every viewport width while heavier decorative effects start at 1000px. At 760px and below the existing single-column shell, 20px inline padding, menu toggle and expanded two-column navigation remain. The greeting retains its 36px intermediate and 34px mobile sizes.
 
 Desktop room filters retain six columns from 1280px, grouped into three at 1000–1279px. Existing cart entry, persistent room-filter labels, date/time recap and account-specific learning-kit disclosure retain their positions and behavior. The separate React example uses the real CSS with data and callbacks; it does not migrate the PHP application.
 
@@ -160,7 +160,7 @@ Existing panel and discovery radii stay intact. The desktop search becomes a rou
 
 Primary actions pair magenta with white, keep their incumbent dimensions (44px minimum for the shared primary button and 45px for discovery search), darken on hover and show one shimmer pass. Other task-specific button sizes remain inherited. Keyboard focus keeps the existing outline dimensions (3px, offset 4px) with magenta color; the grouped discovery search uses a white-and-magenta focus-within ring. Disabled buttons keep the inherited opacity (0.55).
 
-The search keeps the same transparent input, label, tabs and action inside a near-white field. Ordinary fields use white and the rose line token, shifting border color on focus. Active navigation uses a magenta gradient capsule, white label and a trailing decorative four-point marker; expanded mobile navigation retains its existing labels and circular marker below desktop width.
+The search keeps the same transparent input, label, tabs and action inside a near-white field. Ordinary fields use white and the rose line token, shifting border color on focus. Active navigation uses a magenta gradient capsule, white label and a trailing decorative four-point marker; expanded narrow navigation retains its existing labels and layout.
 
 Resource panels and the learning-kit disclosure inherit the glass material. Popular-book and activity rows remain ruled lists. Existing goal/time/level labels, recommendation reasons, verified PDF links, suggested practice, availability and proposed return date stay distinct; adding books to the cart remains separate from submitting a borrowing request.
 
@@ -177,7 +177,7 @@ Reduced-motion preferences keep static decoration and disable animation, transit
 - **Do** preserve the exact existing layout, components, Vietnamese text and live data.
 - **Do** pair Manrope headings with Be Vietnam Pro body copy.
 - **Do** preserve visible keyboard focus and reduced-motion behavior.
-- **Do** keep the desktop skin scoped from 1000px and retain the smaller-screen Open Campus presentation.
+- **Do** retain Pink Glam colors at every browser width; scope heavy decorative effects from 1000px and preserve existing responsive layout.
 - **Don't** turn every activity row into an elevated card.
 - **Don't** replace the PHP frontend with the separate React example.
 - **Don't** hardcode account identity, inventory or activity to match a demonstration.

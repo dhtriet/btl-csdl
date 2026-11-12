@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/assets/campus-desktop.css?v=desktop-1">
   <link rel="stylesheet" href="/assets/learning-kit.css?v=kit-2">
   <link rel="stylesheet" href="/assets/resource-gallery.css?v=1">
-  <link rel="stylesheet" href="/assets/pink-glam.css?v=glam-2">
+  <link rel="stylesheet" href="/assets/pink-glam.css?v=glam-3">
   <link rel="stylesheet" href="/assets/circulation-desk.css?v=1">
 </head>
 <body>

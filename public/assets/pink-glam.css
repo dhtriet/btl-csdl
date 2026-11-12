@@ -1,5 +1,5 @@
-/* Pink Glam: desktop skin. Composition and application behavior belong to campus.css/app.js. */
-@media (min-width: 1000px) {
+/* Keep the Pink Glam palette at every window width; layout remains in campus.css/app.js. */
+@media screen {
   :root {
     --paper: #fff0f5;
     --paper-deep: #ffe4ed;
