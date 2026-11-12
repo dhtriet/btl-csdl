@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Nexus Learning Resource Center</title>
+  <link rel="icon" href="/favicon.ico?v=nexus-1" sizes="32x32">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=nexus-1" sizes="any">
   <link rel="stylesheet" href="/assets/fonts/campus-fonts.css?v=campus-1">
   <link rel="stylesheet" href="/assets/style.css?v=resources-20261103">
   <link rel="stylesheet" href="/assets/desktop.css?v=resources-20261103">

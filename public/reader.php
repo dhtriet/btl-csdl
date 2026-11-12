@@ -54,6 +54,8 @@ $title = $escape($book['title']);
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Đọc giáo trình · Nexus</title>
+  <link rel="icon" href="/favicon.ico?v=nexus-1" sizes="32x32">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=nexus-1" sizes="any">
   <link rel="stylesheet" href="/assets/reader.css">
 </head>
 <body>
