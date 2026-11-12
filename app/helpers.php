@@ -38,7 +38,7 @@ function require_login(): array
 {
     $user = current_user();
     if (!$user) {
-        json_response(['message' => 'Vui long dang nhap de tiep tuc.'], 401);
+        json_response(['message' => 'Vui lòng đăng nhập để tiếp tục.'], 401);
     }
 
     return $user;

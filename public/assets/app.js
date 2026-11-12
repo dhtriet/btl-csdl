@@ -64,6 +64,12 @@ async function api(path, options = {}) {
     ...options,
   });
   const data = await response.json().catch(() => ({}));
+  if (response.status === 401 && state.user) {
+    state.csrfToken = null;
+    setUser(null);
+    $('#login-form [name="username"]')?.focus();
+    throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để tiếp tục.');
+  }
   if (data.csrf_token) state.csrfToken = data.csrf_token;
   if (!response.ok) throw new Error(data.message || 'Không thể kết nối tới máy chủ.');
   return data;

@@ -265,7 +265,7 @@
   <script src="/assets/learning-kit.js?v=kit-3"></script>
   <script src="/assets/manage.js?v=custom-publisher-2"></script>
   <script src="/assets/resource-extensions.js?v=1"></script>
-  <script src="/assets/app.js?v=resource-extensions-1"></script>
+  <script src="/assets/app.js?v=session-expiry-1"></script>
   <script src="/assets/circulation-desk.js?v=no-inventory-2"></script>
   <script type="module" src="/assets/pink-glam-init.js?v=glam-2"></script>
 </body>
