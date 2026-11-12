@@ -1,4 +1,4 @@
 USE resource_center;
 
-ALTER TABLE book_loan_request_items
-    ADD COLUMN quantity INT UNSIGNED NOT NULL DEFAULT 1 AFTER book_id;
+ALTER TABLE chi_tiet_yeu_cau_muon_sach
+    ADD COLUMN so_luong INT UNSIGNED NOT NULL DEFAULT 1 AFTER ma_dau_sach;

@@ -6,408 +6,408 @@ USE resource_center;
 
 SET FOREIGN_KEY_CHECKS = 0;
 
-DROP TABLE IF EXISTS resource_extension_requests;
-DROP TABLE IF EXISTS equipment_loan_request_items;
-DROP TABLE IF EXISTS equipment_loan_requests;
-DROP TABLE IF EXISTS book_loan_request_items;
-DROP TABLE IF EXISTS book_loan_requests;
-DROP TABLE IF EXISTS equipment_loan_details;
-DROP TABLE IF EXISTS equipment_loans;
-DROP TABLE IF EXISTS room_requests;
-DROP TABLE IF EXISTS extension_requests;
-DROP TABLE IF EXISTS extensions;
-DROP TABLE IF EXISTS loan_details;
-DROP TABLE IF EXISTS loan_receipts;
-DROP TABLE IF EXISTS book_copies;
-DROP TABLE IF EXISTS ebooks;
-DROP TABLE IF EXISTS book_keywords;
-DROP TABLE IF EXISTS book_genres;
-DROP TABLE IF EXISTS book_authors;
-DROP TABLE IF EXISTS keywords;
-DROP TABLE IF EXISTS genres;
-DROP TABLE IF EXISTS books;
-DROP TABLE IF EXISTS authors;
-DROP TABLE IF EXISTS publishers;
-DROP TABLE IF EXISTS equipment;
-DROP TABLE IF EXISTS rooms;
-DROP TABLE IF EXISTS students;
-DROP TABLE IF EXISTS librarians;
-DROP TABLE IF EXISTS accounts;
+DROP TABLE IF EXISTS yeu_cau_gia_han_tai_nguyen;
+DROP TABLE IF EXISTS chi_tiet_yeu_cau_muon_thiet_bi;
+DROP TABLE IF EXISTS yeu_cau_muon_thiet_bi;
+DROP TABLE IF EXISTS chi_tiet_yeu_cau_muon_sach;
+DROP TABLE IF EXISTS yeu_cau_muon_sach;
+DROP TABLE IF EXISTS chi_tiet_muon_thiet_bi;
+DROP TABLE IF EXISTS phieu_muon_thiet_bi;
+DROP TABLE IF EXISTS yeu_cau_dat_phong;
+DROP TABLE IF EXISTS yeu_cau_gia_han_sach;
+DROP TABLE IF EXISTS gia_han_sach;
+DROP TABLE IF EXISTS chi_tiet_muon_sach;
+DROP TABLE IF EXISTS phieu_muon_sach;
+DROP TABLE IF EXISTS ban_sach;
+DROP TABLE IF EXISTS sach_dien_tu;
+DROP TABLE IF EXISTS dau_sach_tu_khoa;
+DROP TABLE IF EXISTS dau_sach_the_loai;
+DROP TABLE IF EXISTS dau_sach_tac_gia;
+DROP TABLE IF EXISTS tu_khoa;
+DROP TABLE IF EXISTS the_loai;
+DROP TABLE IF EXISTS dau_sach;
+DROP TABLE IF EXISTS tac_gia;
+DROP TABLE IF EXISTS nha_xuat_ban;
+DROP TABLE IF EXISTS thiet_bi;
+DROP TABLE IF EXISTS phong;
+DROP TABLE IF EXISTS sinh_vien;
+DROP TABLE IF EXISTS thu_thu;
+DROP TABLE IF EXISTS tai_khoan;
 
-CREATE TABLE accounts (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    password VARCHAR(100) NOT NULL,
-    full_name VARCHAR(120) NOT NULL,
-    date_of_birth DATE NULL,
-    email VARCHAR(120) NULL,
-    phone VARCHAR(30) NULL,
-    address VARCHAR(255) NULL,
-    registered_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    role ENUM('student', 'librarian', 'admin') NOT NULL
+CREATE TABLE tai_khoan (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ten_dang_nhap VARCHAR(50) NOT NULL UNIQUE,
+    mat_khau VARCHAR(100) NOT NULL,
+    ho_ten VARCHAR(120) NOT NULL,
+    ngay_sinh DATE NULL,
+    thu_dien_tu VARCHAR(120) NULL,
+    so_dien_thoai VARCHAR(30) NULL,
+    dia_chi VARCHAR(255) NULL,
+    thoi_diem_dang_ky DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    vai_tro ENUM('student', 'librarian', 'admin') NOT NULL
 ) ENGINE=InnoDB;
 
-CREATE TABLE students (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    account_id INT UNSIGNED NOT NULL UNIQUE,
-    student_code VARCHAR(30) NOT NULL UNIQUE,
-    faculty VARCHAR(120) NOT NULL,
-    class_name VARCHAR(80) NOT NULL,
-    CONSTRAINT fk_students_account FOREIGN KEY (account_id) REFERENCES accounts(id)
+CREATE TABLE sinh_vien (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ma_tai_khoan INT UNSIGNED NOT NULL UNIQUE,
+    ma_sinh_vien VARCHAR(30) NOT NULL UNIQUE,
+    khoa VARCHAR(120) NOT NULL,
+    lop VARCHAR(80) NOT NULL,
+    CONSTRAINT fk_students_account FOREIGN KEY (ma_tai_khoan) REFERENCES tai_khoan(ma)
 ) ENGINE=InnoDB;
 
-CREATE TABLE librarians (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    account_id INT UNSIGNED NOT NULL UNIQUE,
-    librarian_code VARCHAR(30) NOT NULL UNIQUE,
-    CONSTRAINT fk_librarians_account FOREIGN KEY (account_id) REFERENCES accounts(id)
+CREATE TABLE thu_thu (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ma_tai_khoan INT UNSIGNED NOT NULL UNIQUE,
+    ma_thu_thu VARCHAR(30) NOT NULL UNIQUE,
+    CONSTRAINT fk_librarians_account FOREIGN KEY (ma_tai_khoan) REFERENCES tai_khoan(ma)
 ) ENGINE=InnoDB;
 
-CREATE TABLE publishers (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(160) NOT NULL,
-    address VARCHAR(255) NULL,
-    email VARCHAR(120) NULL,
-    phone VARCHAR(30) NULL
+CREATE TABLE nha_xuat_ban (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ten VARCHAR(160) NOT NULL,
+    dia_chi VARCHAR(255) NULL,
+    thu_dien_tu VARCHAR(120) NULL,
+    so_dien_thoai VARCHAR(30) NULL
 ) ENGINE=InnoDB;
 
-CREATE TABLE authors (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    full_name VARCHAR(160) NOT NULL,
-    date_of_birth DATE NULL,
-    nationality VARCHAR(80) NULL,
-    biography TEXT NULL
+CREATE TABLE tac_gia (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ho_ten VARCHAR(160) NOT NULL,
+    ngay_sinh DATE NULL,
+    quoc_tich VARCHAR(80) NULL,
+    tieu_su TEXT NULL
 ) ENGINE=InnoDB;
 
-CREATE TABLE genres (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL UNIQUE,
-    description VARCHAR(255) NULL
+CREATE TABLE the_loai (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ten VARCHAR(100) NOT NULL UNIQUE,
+    mo_ta VARCHAR(255) NULL
 ) ENGINE=InnoDB;
 
-CREATE TABLE keywords (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL UNIQUE
+CREATE TABLE tu_khoa (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ten VARCHAR(100) NOT NULL UNIQUE
 ) ENGINE=InnoDB;
 
-CREATE TABLE books (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    is_visible TINYINT(1) NOT NULL DEFAULT 1,
-    deleted_at DATETIME NULL,
-    title VARCHAR(240) NOT NULL,
-    publication_year YEAR NULL,
-    language VARCHAR(60) NOT NULL,
-    summary TEXT NULL,
-    pages INT UNSIGNED NULL,
-    cover_image VARCHAR(255) NULL,
-    description TEXT NULL,
-    publisher_id INT UNSIGNED NOT NULL,
-    CONSTRAINT fk_books_publisher FOREIGN KEY (publisher_id) REFERENCES publishers(id),
-    INDEX idx_books_title (title),
-    INDEX idx_books_language (language),
-    INDEX idx_books_year (publication_year)
+CREATE TABLE dau_sach (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    hien_thi TINYINT(1) NOT NULL DEFAULT 1,
+    thoi_diem_xoa DATETIME NULL,
+    ten_sach VARCHAR(240) NOT NULL,
+    nam_xuat_ban YEAR NULL,
+    ngon_ngu VARCHAR(60) NOT NULL,
+    tom_tat TEXT NULL,
+    so_trang INT UNSIGNED NULL,
+    anh_bia VARCHAR(255) NULL,
+    mo_ta TEXT NULL,
+    ma_nha_xuat_ban INT UNSIGNED NOT NULL,
+    CONSTRAINT fk_books_publisher FOREIGN KEY (ma_nha_xuat_ban) REFERENCES nha_xuat_ban(ma),
+    INDEX idx_books_title (ten_sach),
+    INDEX idx_books_language (ngon_ngu),
+    INDEX idx_books_year (nam_xuat_ban)
 ) ENGINE=InnoDB;
 
-CREATE TABLE book_authors (
-    book_id INT UNSIGNED NOT NULL,
-    author_id INT UNSIGNED NOT NULL,
-    PRIMARY KEY (book_id, author_id),
-    CONSTRAINT fk_book_authors_book FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
-    CONSTRAINT fk_book_authors_author FOREIGN KEY (author_id) REFERENCES authors(id) ON DELETE CASCADE
+CREATE TABLE dau_sach_tac_gia (
+    ma_dau_sach INT UNSIGNED NOT NULL,
+    ma_tac_gia INT UNSIGNED NOT NULL,
+    PRIMARY KEY (ma_dau_sach, ma_tac_gia),
+    CONSTRAINT fk_book_authors_book FOREIGN KEY (ma_dau_sach) REFERENCES dau_sach(ma) ON DELETE CASCADE,
+    CONSTRAINT fk_book_authors_author FOREIGN KEY (ma_tac_gia) REFERENCES tac_gia(ma) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-CREATE TABLE book_genres (
-    book_id INT UNSIGNED NOT NULL,
-    genre_id INT UNSIGNED NOT NULL,
-    PRIMARY KEY (book_id, genre_id),
-    CONSTRAINT fk_book_genres_book FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
-    CONSTRAINT fk_book_genres_genre FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE CASCADE
+CREATE TABLE dau_sach_the_loai (
+    ma_dau_sach INT UNSIGNED NOT NULL,
+    ma_the_loai INT UNSIGNED NOT NULL,
+    PRIMARY KEY (ma_dau_sach, ma_the_loai),
+    CONSTRAINT fk_book_genres_book FOREIGN KEY (ma_dau_sach) REFERENCES dau_sach(ma) ON DELETE CASCADE,
+    CONSTRAINT fk_book_genres_genre FOREIGN KEY (ma_the_loai) REFERENCES the_loai(ma) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-CREATE TABLE book_keywords (
-    book_id INT UNSIGNED NOT NULL,
-    keyword_id INT UNSIGNED NOT NULL,
-    PRIMARY KEY (book_id, keyword_id),
-    CONSTRAINT fk_book_keywords_book FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
-    CONSTRAINT fk_book_keywords_keyword FOREIGN KEY (keyword_id) REFERENCES keywords(id) ON DELETE CASCADE
+CREATE TABLE dau_sach_tu_khoa (
+    ma_dau_sach INT UNSIGNED NOT NULL,
+    ma_tu_khoa INT UNSIGNED NOT NULL,
+    PRIMARY KEY (ma_dau_sach, ma_tu_khoa),
+    CONSTRAINT fk_book_keywords_book FOREIGN KEY (ma_dau_sach) REFERENCES dau_sach(ma) ON DELETE CASCADE,
+    CONSTRAINT fk_book_keywords_keyword FOREIGN KEY (ma_tu_khoa) REFERENCES tu_khoa(ma) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-CREATE TABLE ebooks (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    book_id INT UNSIGNED NOT NULL UNIQUE,
-    file_format VARCHAR(20) NOT NULL,
-    file_size_mb DECIMAL(8, 2) NULL,
-    resolution VARCHAR(40) NULL,
-    file_path VARCHAR(255) NULL,
-    CONSTRAINT fk_ebooks_book FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+CREATE TABLE sach_dien_tu (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ma_dau_sach INT UNSIGNED NOT NULL UNIQUE,
+    dinh_dang_tep VARCHAR(20) NOT NULL,
+    dung_luong_mb DECIMAL(8, 2) NULL,
+    do_phan_giai VARCHAR(40) NULL,
+    duong_dan_tep VARCHAR(255) NULL,
+    CONSTRAINT fk_ebooks_book FOREIGN KEY (ma_dau_sach) REFERENCES dau_sach(ma) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-CREATE TABLE book_copies (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    is_visible TINYINT(1) NOT NULL DEFAULT 1,
-    deleted_at DATETIME NULL,
-    book_id INT UNSIGNED NOT NULL,
-    barcode VARCHAR(40) NOT NULL UNIQUE,
-    storage_location VARCHAR(120) NOT NULL,
-    condition_status ENUM('good', 'worn', 'damaged', 'lost') NOT NULL DEFAULT 'good',
-    status ENUM('available', 'borrowed', 'damaged', 'lost') NOT NULL DEFAULT 'available',
-    CONSTRAINT fk_book_copies_book FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
-    INDEX idx_book_copies_status (status)
+CREATE TABLE ban_sach (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    hien_thi TINYINT(1) NOT NULL DEFAULT 1,
+    thoi_diem_xoa DATETIME NULL,
+    ma_dau_sach INT UNSIGNED NOT NULL,
+    ma_vach VARCHAR(40) NOT NULL UNIQUE,
+    vi_tri_luu_tru VARCHAR(120) NOT NULL,
+    tinh_trang ENUM('good', 'worn', 'damaged', 'lost') NOT NULL DEFAULT 'good',
+    trang_thai ENUM('available', 'borrowed', 'damaged', 'lost') NOT NULL DEFAULT 'available',
+    CONSTRAINT fk_book_copies_book FOREIGN KEY (ma_dau_sach) REFERENCES dau_sach(ma) ON DELETE CASCADE,
+    INDEX idx_book_copies_status (trang_thai)
 ) ENGINE=InnoDB;
 
-CREATE TABLE book_loan_requests (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    student_id INT UNSIGNED NOT NULL,
-    librarian_id INT UNSIGNED NULL,
-    requested_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    note VARCHAR(255) NULL,
-    source ENUM('online','counter') NOT NULL DEFAULT 'online',
-    status ENUM('pending', 'approved', 'rejected', 'cancelled') NOT NULL DEFAULT 'pending',
-    reviewed_at DATETIME NULL,
-    review_note VARCHAR(255) NULL,
-    CONSTRAINT fk_book_loan_requests_student FOREIGN KEY (student_id) REFERENCES students(id),
-    CONSTRAINT fk_book_loan_requests_librarian FOREIGN KEY (librarian_id) REFERENCES librarians(id),
-    INDEX idx_book_loan_requests_student_status (student_id, status),
-    INDEX idx_book_loan_requests_status (status, requested_at)
+CREATE TABLE yeu_cau_muon_sach (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ma_ho_so_sinh_vien INT UNSIGNED NOT NULL,
+    ma_ho_so_thu_thu INT UNSIGNED NULL,
+    thoi_diem_gui_yeu_cau DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ghi_chu VARCHAR(255) NULL,
+    nguon_tao ENUM('online','counter') NOT NULL DEFAULT 'online',
+    trang_thai ENUM('pending', 'approved', 'rejected', 'cancelled') NOT NULL DEFAULT 'pending',
+    thoi_diem_xet_duyet DATETIME NULL,
+    ghi_chu_xet_duyet VARCHAR(255) NULL,
+    CONSTRAINT fk_book_loan_requests_student FOREIGN KEY (ma_ho_so_sinh_vien) REFERENCES sinh_vien(ma),
+    CONSTRAINT fk_book_loan_requests_librarian FOREIGN KEY (ma_ho_so_thu_thu) REFERENCES thu_thu(ma),
+    INDEX idx_book_loan_requests_student_status (ma_ho_so_sinh_vien, trang_thai),
+    INDEX idx_book_loan_requests_status (trang_thai, thoi_diem_gui_yeu_cau)
 ) ENGINE=InnoDB;
 
-CREATE TABLE book_loan_request_items (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    request_id INT UNSIGNED NOT NULL,
-    book_id INT UNSIGNED NOT NULL,
-    quantity INT UNSIGNED NOT NULL DEFAULT 1,
-    requested_due_date DATE NOT NULL,
-    CONSTRAINT fk_book_loan_request_items_request FOREIGN KEY (request_id) REFERENCES book_loan_requests(id) ON DELETE CASCADE,
-    CONSTRAINT fk_book_loan_request_items_book FOREIGN KEY (book_id) REFERENCES books(id),
-    UNIQUE KEY uq_book_loan_request_item (request_id, book_id)
+CREATE TABLE chi_tiet_yeu_cau_muon_sach (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ma_yeu_cau INT UNSIGNED NOT NULL,
+    ma_dau_sach INT UNSIGNED NOT NULL,
+    so_luong INT UNSIGNED NOT NULL DEFAULT 1,
+    han_tra_de_nghi DATE NOT NULL,
+    CONSTRAINT fk_book_loan_request_items_request FOREIGN KEY (ma_yeu_cau) REFERENCES yeu_cau_muon_sach(ma) ON DELETE CASCADE,
+    CONSTRAINT fk_book_loan_request_items_book FOREIGN KEY (ma_dau_sach) REFERENCES dau_sach(ma),
+    UNIQUE KEY uq_book_loan_request_item (ma_yeu_cau, ma_dau_sach)
 ) ENGINE=InnoDB;
 
-CREATE TABLE loan_receipts (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    request_id INT UNSIGNED NULL UNIQUE,
-    student_id INT UNSIGNED NOT NULL,
-    librarian_id INT UNSIGNED NOT NULL,
-    registered_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    note VARCHAR(255) NULL,
-    status ENUM('open', 'completed') NOT NULL DEFAULT 'open',
-    CONSTRAINT fk_loan_receipts_student FOREIGN KEY (student_id) REFERENCES students(id),
-    CONSTRAINT fk_loan_receipts_librarian FOREIGN KEY (librarian_id) REFERENCES librarians(id),
-    CONSTRAINT fk_loan_receipts_request FOREIGN KEY (request_id) REFERENCES book_loan_requests(id),
-    INDEX idx_loan_receipts_student (student_id)
+CREATE TABLE phieu_muon_sach (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ma_yeu_cau INT UNSIGNED NULL UNIQUE,
+    ma_ho_so_sinh_vien INT UNSIGNED NOT NULL,
+    ma_ho_so_thu_thu INT UNSIGNED NOT NULL,
+    thoi_diem_dang_ky DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ghi_chu VARCHAR(255) NULL,
+    trang_thai ENUM('open', 'completed') NOT NULL DEFAULT 'open',
+    CONSTRAINT fk_loan_receipts_student FOREIGN KEY (ma_ho_so_sinh_vien) REFERENCES sinh_vien(ma),
+    CONSTRAINT fk_loan_receipts_librarian FOREIGN KEY (ma_ho_so_thu_thu) REFERENCES thu_thu(ma),
+    CONSTRAINT fk_loan_receipts_request FOREIGN KEY (ma_yeu_cau) REFERENCES yeu_cau_muon_sach(ma),
+    INDEX idx_loan_receipts_student (ma_ho_so_sinh_vien)
 ) ENGINE=InnoDB;
 
-CREATE TABLE loan_details (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    receipt_id INT UNSIGNED NOT NULL,
-    copy_id INT UNSIGNED NOT NULL,
-    borrow_date DATE NOT NULL,
-    due_date DATE NOT NULL,
-    return_date DATE NULL,
-    return_status ENUM('on_time', 'late') NULL,
-    late_days SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-    extension_count TINYINT UNSIGNED NOT NULL DEFAULT 0,
-    status ENUM('borrowed', 'returned', 'overdue') NOT NULL DEFAULT 'borrowed',
-    condition_on_return ENUM('good', 'worn', 'damaged', 'lost') NULL,
-    CONSTRAINT fk_loan_details_receipt FOREIGN KEY (receipt_id) REFERENCES loan_receipts(id) ON DELETE CASCADE,
-    CONSTRAINT fk_loan_details_copy FOREIGN KEY (copy_id) REFERENCES book_copies(id),
-    INDEX idx_loan_details_due (due_date, status),
-    INDEX idx_loan_details_return (return_date)
+CREATE TABLE chi_tiet_muon_sach (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ma_phieu_muon_sach INT UNSIGNED NOT NULL,
+    ma_ban_sach INT UNSIGNED NOT NULL,
+    ngay_muon DATE NOT NULL,
+    han_tra DATE NOT NULL,
+    ngay_tra DATE NULL,
+    ket_qua_tra ENUM('on_time', 'late') NULL,
+    so_ngay_tre SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    so_lan_gia_han TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    trang_thai ENUM('borrowed', 'returned', 'overdue') NOT NULL DEFAULT 'borrowed',
+    tinh_trang_khi_tra ENUM('good', 'worn', 'damaged', 'lost') NULL,
+    CONSTRAINT fk_loan_details_receipt FOREIGN KEY (ma_phieu_muon_sach) REFERENCES phieu_muon_sach(ma) ON DELETE CASCADE,
+    CONSTRAINT fk_loan_details_copy FOREIGN KEY (ma_ban_sach) REFERENCES ban_sach(ma),
+    INDEX idx_loan_details_due (han_tra, trang_thai),
+    INDEX idx_loan_details_return (ngay_tra)
 ) ENGINE=InnoDB;
 
-CREATE TABLE extensions (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    loan_detail_id INT UNSIGNED NOT NULL,
-    librarian_id INT UNSIGNED NOT NULL,
-    old_due_date DATE NOT NULL,
-    new_due_date DATE NOT NULL,
-    extension_date DATE NOT NULL,
-    CONSTRAINT fk_extensions_detail FOREIGN KEY (loan_detail_id) REFERENCES loan_details(id) ON DELETE CASCADE,
-    CONSTRAINT fk_extensions_librarian FOREIGN KEY (librarian_id) REFERENCES librarians(id)
+CREATE TABLE gia_han_sach (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ma_chi_tiet_muon_sach INT UNSIGNED NOT NULL,
+    ma_ho_so_thu_thu INT UNSIGNED NOT NULL,
+    han_tra_cu DATE NOT NULL,
+    han_tra_moi DATE NOT NULL,
+    ngay_gia_han DATE NOT NULL,
+    CONSTRAINT fk_extensions_detail FOREIGN KEY (ma_chi_tiet_muon_sach) REFERENCES chi_tiet_muon_sach(ma) ON DELETE CASCADE,
+    CONSTRAINT fk_extensions_librarian FOREIGN KEY (ma_ho_so_thu_thu) REFERENCES thu_thu(ma)
 ) ENGINE=InnoDB;
 
-CREATE TABLE extension_requests (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    loan_detail_id INT UNSIGNED NOT NULL,
-    old_due_date DATE NOT NULL,
-    requested_due_date DATE NOT NULL,
-    reason VARCHAR(500) NOT NULL DEFAULT '',
-    status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
-    requested_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    librarian_id INT UNSIGNED NULL,
-    reviewed_at DATETIME NULL,
-    review_note VARCHAR(500) NULL,
-    extension_id INT UNSIGNED NULL UNIQUE,
-    pending_loan_id INT UNSIGNED GENERATED ALWAYS AS (CASE WHEN status='pending' THEN loan_detail_id ELSE NULL END) STORED,
-    UNIQUE KEY uq_extension_pending (pending_loan_id),
-    CONSTRAINT fk_extension_request_loan FOREIGN KEY (loan_detail_id) REFERENCES loan_details(id),
-    CONSTRAINT fk_extension_request_staff FOREIGN KEY (librarian_id) REFERENCES librarians(id),
-    CONSTRAINT fk_extension_request_result FOREIGN KEY (extension_id) REFERENCES extensions(id),
-    CONSTRAINT chk_extension_request_dates CHECK (requested_due_date > old_due_date),
+CREATE TABLE yeu_cau_gia_han_sach (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ma_chi_tiet_muon_sach INT UNSIGNED NOT NULL,
+    han_tra_cu DATE NOT NULL,
+    han_tra_de_nghi DATE NOT NULL,
+    ly_do VARCHAR(500) NOT NULL DEFAULT '',
+    trang_thai ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+    thoi_diem_gui_yeu_cau DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ma_ho_so_thu_thu INT UNSIGNED NULL,
+    thoi_diem_xet_duyet DATETIME NULL,
+    ghi_chu_xet_duyet VARCHAR(500) NULL,
+    ma_gia_han INT UNSIGNED NULL UNIQUE,
+    khoa_cho_duyet_muon_sach INT UNSIGNED GENERATED ALWAYS AS (CASE WHEN trang_thai='pending' THEN ma_chi_tiet_muon_sach ELSE NULL END) STORED,
+    UNIQUE KEY uq_extension_pending (khoa_cho_duyet_muon_sach),
+    CONSTRAINT fk_extension_request_loan FOREIGN KEY (ma_chi_tiet_muon_sach) REFERENCES chi_tiet_muon_sach(ma),
+    CONSTRAINT fk_extension_request_staff FOREIGN KEY (ma_ho_so_thu_thu) REFERENCES thu_thu(ma),
+    CONSTRAINT fk_extension_request_result FOREIGN KEY (ma_gia_han) REFERENCES gia_han_sach(ma),
+    CONSTRAINT chk_extension_request_dates CHECK (han_tra_de_nghi > han_tra_cu),
     CONSTRAINT chk_extension_request_review CHECK (
-        (status='pending' AND librarian_id IS NULL AND reviewed_at IS NULL AND extension_id IS NULL)
-        OR (status='approved' AND librarian_id IS NOT NULL AND reviewed_at IS NOT NULL AND extension_id IS NOT NULL)
-        OR (status='rejected' AND librarian_id IS NOT NULL AND reviewed_at IS NOT NULL AND extension_id IS NULL)
+        (trang_thai='pending' AND ma_ho_so_thu_thu IS NULL AND thoi_diem_xet_duyet IS NULL AND ma_gia_han IS NULL)
+        OR (trang_thai='approved' AND ma_ho_so_thu_thu IS NOT NULL AND thoi_diem_xet_duyet IS NOT NULL AND ma_gia_han IS NOT NULL)
+        OR (trang_thai='rejected' AND ma_ho_so_thu_thu IS NOT NULL AND thoi_diem_xet_duyet IS NOT NULL AND ma_gia_han IS NULL)
     )
 ) ENGINE=InnoDB;
 
-CREATE TABLE rooms (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    is_visible TINYINT(1) NOT NULL DEFAULT 1,
-    deleted_at DATETIME NULL,
-    image_path VARCHAR(255) NULL,
-    image_is_illustration TINYINT(1) NOT NULL DEFAULT 0,
-    name VARCHAR(100) NOT NULL,
-    room_type ENUM('classroom', 'meeting_room') NOT NULL,
-    location VARCHAR(160) NOT NULL,
-    capacity INT UNSIGNED NOT NULL,
-    included_equipment VARCHAR(255) NULL,
-    operating_hours VARCHAR(120) NULL,
-    status ENUM('available', 'maintenance', 'inactive') NOT NULL DEFAULT 'available',
-    INDEX idx_rooms_type_capacity (room_type, capacity)
+CREATE TABLE phong (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    hien_thi TINYINT(1) NOT NULL DEFAULT 1,
+    thoi_diem_xoa DATETIME NULL,
+    duong_dan_anh VARCHAR(255) NULL,
+    anh_minh_hoa TINYINT(1) NOT NULL DEFAULT 0,
+    ten VARCHAR(100) NOT NULL,
+    loai_phong ENUM('classroom', 'meeting_room') NOT NULL,
+    vi_tri VARCHAR(160) NOT NULL,
+    suc_chua INT UNSIGNED NOT NULL,
+    thiet_bi_di_kem VARCHAR(255) NULL,
+    gio_hoat_dong VARCHAR(120) NULL,
+    trang_thai ENUM('available', 'maintenance', 'inactive') NOT NULL DEFAULT 'available',
+    INDEX idx_rooms_type_capacity (loai_phong, suc_chua)
 ) ENGINE=InnoDB;
 
-CREATE TABLE room_requests (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    student_id INT UNSIGNED NOT NULL,
-    room_id INT UNSIGNED NOT NULL,
-    librarian_id INT UNSIGNED NULL,
-    use_date DATE NOT NULL,
-    start_time TIME NOT NULL,
-    end_time TIME NOT NULL,
-    purpose VARCHAR(255) NOT NULL,
-    status ENUM('pending', 'approved', 'rejected', 'cancelled', 'completed') NOT NULL DEFAULT 'pending',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    reviewed_at DATETIME NULL,
-    review_note VARCHAR(255) NULL,
-    CONSTRAINT fk_room_requests_student FOREIGN KEY (student_id) REFERENCES students(id),
-    CONSTRAINT fk_room_requests_room FOREIGN KEY (room_id) REFERENCES rooms(id),
-    CONSTRAINT fk_room_requests_librarian FOREIGN KEY (librarian_id) REFERENCES librarians(id),
-    INDEX idx_room_requests_schedule (room_id, use_date, start_time, end_time, status)
+CREATE TABLE yeu_cau_dat_phong (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ma_ho_so_sinh_vien INT UNSIGNED NOT NULL,
+    ma_phong INT UNSIGNED NOT NULL,
+    ma_ho_so_thu_thu INT UNSIGNED NULL,
+    ngay_su_dung DATE NOT NULL,
+    gio_bat_dau TIME NOT NULL,
+    gio_ket_thuc TIME NOT NULL,
+    muc_dich VARCHAR(255) NOT NULL,
+    trang_thai ENUM('pending', 'approved', 'rejected', 'cancelled', 'completed') NOT NULL DEFAULT 'pending',
+    thoi_diem_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    thoi_diem_xet_duyet DATETIME NULL,
+    ghi_chu_xet_duyet VARCHAR(255) NULL,
+    CONSTRAINT fk_room_requests_student FOREIGN KEY (ma_ho_so_sinh_vien) REFERENCES sinh_vien(ma),
+    CONSTRAINT fk_room_requests_room FOREIGN KEY (ma_phong) REFERENCES phong(ma),
+    CONSTRAINT fk_room_requests_librarian FOREIGN KEY (ma_ho_so_thu_thu) REFERENCES thu_thu(ma),
+    INDEX idx_room_requests_schedule (ma_phong, ngay_su_dung, gio_bat_dau, gio_ket_thuc, trang_thai)
 ) ENGINE=InnoDB;
 
-CREATE TABLE equipment (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    is_visible TINYINT(1) NOT NULL DEFAULT 1,
-    deleted_at DATETIME NULL,
-    image_path VARCHAR(255) NULL,
-    image_is_illustration TINYINT(1) NOT NULL DEFAULT 0,
-    name VARCHAR(160) NOT NULL,
-    equipment_type VARCHAR(100) NOT NULL,
-    manufacturer VARCHAR(120) NULL,
-    description TEXT NULL,
-    usage_guide TEXT NULL,
-    total_quantity INT UNSIGNED NOT NULL DEFAULT 1,
-    available_quantity INT UNSIGNED NOT NULL DEFAULT 1,
-    unavailable_quantity INT UNSIGNED NOT NULL DEFAULT 0,
-    storage_location VARCHAR(160) NULL,
-    serial_number VARCHAR(120) NULL,
-    status ENUM('available', 'borrowed', 'maintenance', 'damaged', 'unavailable') NOT NULL DEFAULT 'available',
-    INDEX idx_equipment_type_status (equipment_type, status)
+CREATE TABLE thiet_bi (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    hien_thi TINYINT(1) NOT NULL DEFAULT 1,
+    thoi_diem_xoa DATETIME NULL,
+    duong_dan_anh VARCHAR(255) NULL,
+    anh_minh_hoa TINYINT(1) NOT NULL DEFAULT 0,
+    ten VARCHAR(160) NOT NULL,
+    loai_thiet_bi VARCHAR(100) NOT NULL,
+    hang_san_xuat VARCHAR(120) NULL,
+    mo_ta TEXT NULL,
+    huong_dan_su_dung TEXT NULL,
+    tong_so_luong INT UNSIGNED NOT NULL DEFAULT 1,
+    so_luong_san_sang INT UNSIGNED NOT NULL DEFAULT 1,
+    so_luong_khong_kha_dung INT UNSIGNED NOT NULL DEFAULT 0,
+    vi_tri_luu_tru VARCHAR(160) NULL,
+    so_se_ri VARCHAR(120) NULL,
+    trang_thai ENUM('available', 'borrowed', 'maintenance', 'damaged', 'unavailable') NOT NULL DEFAULT 'available',
+    INDEX idx_equipment_type_status (loai_thiet_bi, trang_thai)
 ) ENGINE=InnoDB;
 
-CREATE TABLE equipment_loan_requests (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    student_id INT UNSIGNED NOT NULL,
-    librarian_id INT UNSIGNED NULL,
-    requested_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    note VARCHAR(255) NULL,
-    source ENUM('online','counter') NOT NULL DEFAULT 'online',
-    status ENUM('pending', 'approved', 'rejected', 'cancelled') NOT NULL DEFAULT 'pending',
-    reviewed_at DATETIME NULL,
-    review_note VARCHAR(255) NULL,
-    CONSTRAINT fk_equipment_loan_requests_student FOREIGN KEY (student_id) REFERENCES students(id),
-    CONSTRAINT fk_equipment_loan_requests_librarian FOREIGN KEY (librarian_id) REFERENCES librarians(id),
-    INDEX idx_equipment_loan_requests_student_status (student_id, status),
-    INDEX idx_equipment_loan_requests_status (status, requested_at)
+CREATE TABLE yeu_cau_muon_thiet_bi (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ma_ho_so_sinh_vien INT UNSIGNED NOT NULL,
+    ma_ho_so_thu_thu INT UNSIGNED NULL,
+    thoi_diem_gui_yeu_cau DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ghi_chu VARCHAR(255) NULL,
+    nguon_tao ENUM('online','counter') NOT NULL DEFAULT 'online',
+    trang_thai ENUM('pending', 'approved', 'rejected', 'cancelled') NOT NULL DEFAULT 'pending',
+    thoi_diem_xet_duyet DATETIME NULL,
+    ghi_chu_xet_duyet VARCHAR(255) NULL,
+    CONSTRAINT fk_equipment_loan_requests_student FOREIGN KEY (ma_ho_so_sinh_vien) REFERENCES sinh_vien(ma),
+    CONSTRAINT fk_equipment_loan_requests_librarian FOREIGN KEY (ma_ho_so_thu_thu) REFERENCES thu_thu(ma),
+    INDEX idx_equipment_loan_requests_student_status (ma_ho_so_sinh_vien, trang_thai),
+    INDEX idx_equipment_loan_requests_status (trang_thai, thoi_diem_gui_yeu_cau)
 ) ENGINE=InnoDB;
 
-CREATE TABLE equipment_loan_request_items (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    request_id INT UNSIGNED NOT NULL,
-    equipment_id INT UNSIGNED NOT NULL,
-    quantity INT UNSIGNED NOT NULL DEFAULT 1,
-    requested_due_date DATE NOT NULL,
-    CONSTRAINT fk_equipment_loan_request_items_request FOREIGN KEY (request_id) REFERENCES equipment_loan_requests(id) ON DELETE CASCADE,
-    CONSTRAINT fk_equipment_loan_request_items_equipment FOREIGN KEY (equipment_id) REFERENCES equipment(id),
-    UNIQUE KEY uq_equipment_loan_request_item (request_id, equipment_id)
+CREATE TABLE chi_tiet_yeu_cau_muon_thiet_bi (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ma_yeu_cau INT UNSIGNED NOT NULL,
+    ma_thiet_bi INT UNSIGNED NOT NULL,
+    so_luong INT UNSIGNED NOT NULL DEFAULT 1,
+    han_tra_de_nghi DATE NOT NULL,
+    CONSTRAINT fk_equipment_loan_request_items_request FOREIGN KEY (ma_yeu_cau) REFERENCES yeu_cau_muon_thiet_bi(ma) ON DELETE CASCADE,
+    CONSTRAINT fk_equipment_loan_request_items_equipment FOREIGN KEY (ma_thiet_bi) REFERENCES thiet_bi(ma),
+    UNIQUE KEY uq_equipment_loan_request_item (ma_yeu_cau, ma_thiet_bi)
 ) ENGINE=InnoDB;
 
-CREATE TABLE equipment_loans (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    request_id INT UNSIGNED NULL UNIQUE,
-    student_id INT UNSIGNED NOT NULL,
-    librarian_id INT UNSIGNED NOT NULL,
-    registered_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    note VARCHAR(255) NULL,
-    status ENUM('borrowed', 'returned', 'overdue') NOT NULL DEFAULT 'borrowed',
-    CONSTRAINT fk_equipment_loans_student FOREIGN KEY (student_id) REFERENCES students(id),
-    CONSTRAINT fk_equipment_loans_librarian FOREIGN KEY (librarian_id) REFERENCES librarians(id),
-    CONSTRAINT fk_equipment_loans_request FOREIGN KEY (request_id) REFERENCES equipment_loan_requests(id)
+CREATE TABLE phieu_muon_thiet_bi (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ma_yeu_cau INT UNSIGNED NULL UNIQUE,
+    ma_ho_so_sinh_vien INT UNSIGNED NOT NULL,
+    ma_ho_so_thu_thu INT UNSIGNED NOT NULL,
+    thoi_diem_dang_ky DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ghi_chu VARCHAR(255) NULL,
+    trang_thai ENUM('borrowed', 'returned', 'overdue') NOT NULL DEFAULT 'borrowed',
+    CONSTRAINT fk_equipment_loans_student FOREIGN KEY (ma_ho_so_sinh_vien) REFERENCES sinh_vien(ma),
+    CONSTRAINT fk_equipment_loans_librarian FOREIGN KEY (ma_ho_so_thu_thu) REFERENCES thu_thu(ma),
+    CONSTRAINT fk_equipment_loans_request FOREIGN KEY (ma_yeu_cau) REFERENCES yeu_cau_muon_thiet_bi(ma)
 ) ENGINE=InnoDB;
 
-CREATE TABLE equipment_loan_details (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    loan_id INT UNSIGNED NOT NULL,
-    equipment_id INT UNSIGNED NOT NULL,
-    quantity INT UNSIGNED NOT NULL DEFAULT 1,
-    borrow_date DATE NOT NULL,
-    due_date DATE NOT NULL,
-    return_date DATE NULL,
-    return_status ENUM('on_time', 'late') NULL,
-    late_days SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-    condition_on_borrow VARCHAR(120) NULL,
-    condition_on_return VARCHAR(120) NULL,
-    status ENUM('borrowed', 'returned', 'overdue') NOT NULL DEFAULT 'borrowed',
-    CONSTRAINT fk_equipment_loan_details_loan FOREIGN KEY (loan_id) REFERENCES equipment_loans(id) ON DELETE CASCADE,
-    CONSTRAINT fk_equipment_loan_details_equipment FOREIGN KEY (equipment_id) REFERENCES equipment(id),
-    INDEX idx_equipment_loan_details_due (due_date, status)
+CREATE TABLE chi_tiet_muon_thiet_bi (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ma_phieu_muon_thiet_bi INT UNSIGNED NOT NULL,
+    ma_thiet_bi INT UNSIGNED NOT NULL,
+    so_luong INT UNSIGNED NOT NULL DEFAULT 1,
+    ngay_muon DATE NOT NULL,
+    han_tra DATE NOT NULL,
+    ngay_tra DATE NULL,
+    ket_qua_tra ENUM('on_time', 'late') NULL,
+    so_ngay_tre SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    tinh_trang_khi_muon VARCHAR(120) NULL,
+    tinh_trang_khi_tra VARCHAR(120) NULL,
+    trang_thai ENUM('borrowed', 'returned', 'overdue') NOT NULL DEFAULT 'borrowed',
+    CONSTRAINT fk_equipment_loan_details_loan FOREIGN KEY (ma_phieu_muon_thiet_bi) REFERENCES phieu_muon_thiet_bi(ma) ON DELETE CASCADE,
+    CONSTRAINT fk_equipment_loan_details_equipment FOREIGN KEY (ma_thiet_bi) REFERENCES thiet_bi(ma),
+    INDEX idx_equipment_loan_details_due (han_tra, trang_thai)
 ) ENGINE=InnoDB;
 
-CREATE TABLE IF NOT EXISTS resource_extension_requests (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    equipment_detail_id INT UNSIGNED NULL,
-    room_request_id INT UNSIGNED NULL,
-    old_deadline DATETIME NOT NULL,
-    requested_deadline DATETIME NOT NULL,
-    reason VARCHAR(500) NOT NULL DEFAULT '',
-    status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
-    requested_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    librarian_id INT UNSIGNED NULL,
-    reviewed_at DATETIME NULL,
-    review_note VARCHAR(500) NULL,
-    pending_equipment_id INT UNSIGNED GENERATED ALWAYS AS (CASE WHEN status='pending' THEN equipment_detail_id ELSE NULL END) STORED,
-    pending_room_id INT UNSIGNED GENERATED ALWAYS AS (CASE WHEN status='pending' THEN room_request_id ELSE NULL END) STORED,
-    UNIQUE KEY uq_resource_extension_equipment (pending_equipment_id),
-    UNIQUE KEY uq_resource_extension_room (pending_room_id),
-    CONSTRAINT fk_resource_extension_equipment FOREIGN KEY (equipment_detail_id) REFERENCES equipment_loan_details(id),
-    CONSTRAINT fk_resource_extension_room FOREIGN KEY (room_request_id) REFERENCES room_requests(id),
-    CONSTRAINT fk_resource_extension_staff FOREIGN KEY (librarian_id) REFERENCES librarians(id),
-    CONSTRAINT chk_resource_extension_target CHECK ((equipment_detail_id IS NOT NULL) + (room_request_id IS NOT NULL) = 1),
-    CONSTRAINT chk_resource_extension_deadline CHECK (requested_deadline > old_deadline),
+CREATE TABLE IF NOT EXISTS yeu_cau_gia_han_tai_nguyen (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ma_chi_tiet_muon_thiet_bi INT UNSIGNED NULL,
+    ma_yeu_cau_dat_phong INT UNSIGNED NULL,
+    han_su_dung_cu DATETIME NOT NULL,
+    han_su_dung_de_nghi DATETIME NOT NULL,
+    ly_do VARCHAR(500) NOT NULL DEFAULT '',
+    trang_thai ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+    thoi_diem_gui_yeu_cau DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ma_ho_so_thu_thu INT UNSIGNED NULL,
+    thoi_diem_xet_duyet DATETIME NULL,
+    ghi_chu_xet_duyet VARCHAR(500) NULL,
+    khoa_cho_duyet_thiet_bi INT UNSIGNED GENERATED ALWAYS AS (CASE WHEN trang_thai='pending' THEN ma_chi_tiet_muon_thiet_bi ELSE NULL END) STORED,
+    khoa_cho_duyet_phong INT UNSIGNED GENERATED ALWAYS AS (CASE WHEN trang_thai='pending' THEN ma_yeu_cau_dat_phong ELSE NULL END) STORED,
+    UNIQUE KEY uq_resource_extension_equipment (khoa_cho_duyet_thiet_bi),
+    UNIQUE KEY uq_resource_extension_room (khoa_cho_duyet_phong),
+    CONSTRAINT fk_resource_extension_equipment FOREIGN KEY (ma_chi_tiet_muon_thiet_bi) REFERENCES chi_tiet_muon_thiet_bi(ma),
+    CONSTRAINT fk_resource_extension_room FOREIGN KEY (ma_yeu_cau_dat_phong) REFERENCES yeu_cau_dat_phong(ma),
+    CONSTRAINT fk_resource_extension_staff FOREIGN KEY (ma_ho_so_thu_thu) REFERENCES thu_thu(ma),
+    CONSTRAINT chk_resource_extension_target CHECK ((ma_chi_tiet_muon_thiet_bi IS NOT NULL) + (ma_yeu_cau_dat_phong IS NOT NULL) = 1),
+    CONSTRAINT chk_resource_extension_deadline CHECK (han_su_dung_de_nghi > han_su_dung_cu),
     CONSTRAINT chk_resource_extension_review CHECK (
-        (status='pending' AND librarian_id IS NULL AND reviewed_at IS NULL)
-        OR (status IN ('approved','rejected') AND librarian_id IS NOT NULL AND reviewed_at IS NOT NULL)
+        (trang_thai='pending' AND ma_ho_so_thu_thu IS NULL AND thoi_diem_xet_duyet IS NULL)
+        OR (trang_thai IN ('approved','rejected') AND ma_ho_so_thu_thu IS NOT NULL AND thoi_diem_xet_duyet IS NOT NULL)
     )
 ) ENGINE=InnoDB;
 
 -- Row invariants and one active loan per physical copy.
-ALTER TABLE `books` ADD CONSTRAINT `chk_books_pages` CHECK (pages IS NULL OR pages > 0);
-ALTER TABLE `ebooks` ADD CONSTRAINT `chk_ebooks_size` CHECK (file_size_mb IS NULL OR file_size_mb > 0);
-ALTER TABLE `book_loan_request_items` ADD CONSTRAINT `chk_book_request_quantity` CHECK (quantity > 0);
-ALTER TABLE `equipment_loan_request_items` ADD CONSTRAINT `chk_equipment_request_quantity` CHECK (quantity > 0);
-ALTER TABLE `equipment` ADD CONSTRAINT `chk_equipment_quantities` CHECK (total_quantity > 0 AND available_quantity >= 0 AND available_quantity <= total_quantity);
-ALTER TABLE `rooms` ADD CONSTRAINT `chk_rooms_capacity` CHECK (capacity > 0);
-ALTER TABLE `room_requests` ADD CONSTRAINT `chk_room_request_time` CHECK (use_date >= '1000-01-01' AND start_time >= '00:00:00' AND start_time < end_time AND end_time <= '24:00:00');
-ALTER TABLE `extensions` ADD CONSTRAINT `chk_extensions_dates` CHECK (old_due_date >= '1000-01-01' AND new_due_date > old_due_date AND extension_date >= '1000-01-01');
-ALTER TABLE `loan_details` ADD CONSTRAINT `chk_loan_dates` CHECK (borrow_date >= '1000-01-01' AND due_date >= borrow_date AND (return_date IS NULL OR return_date >= borrow_date));
-ALTER TABLE `loan_details` ADD CONSTRAINT `chk_loan_extensions` CHECK (extension_count <= 3);
-ALTER TABLE `loan_details` ADD CONSTRAINT `chk_loan_return_state` CHECK ((return_date IS NULL AND status IN ('borrowed','overdue') AND return_status IS NULL AND late_days=0 AND condition_on_return IS NULL) OR (return_date IS NOT NULL AND status='returned' AND return_status IS NOT NULL AND condition_on_return IS NOT NULL AND CHAR_LENGTH(TRIM(condition_on_return))>0));
-ALTER TABLE `loan_details` ADD CONSTRAINT `chk_loan_return_result` CHECK (return_date IS NULL OR return_status=IF(late_days>0,'late','on_time'));
-ALTER TABLE `equipment_loan_details` ADD CONSTRAINT `chk_equipment_loan_quantity` CHECK (quantity > 0);
-ALTER TABLE `equipment_loan_details` ADD CONSTRAINT `chk_equipment_loan_dates` CHECK (borrow_date >= '1000-01-01' AND due_date >= borrow_date AND (return_date IS NULL OR return_date >= borrow_date));
-ALTER TABLE `equipment_loan_details` ADD CONSTRAINT `chk_equipment_return_state` CHECK ((return_date IS NULL AND status IN ('borrowed','overdue') AND return_status IS NULL AND late_days=0 AND condition_on_return IS NULL) OR (return_date IS NOT NULL AND status='returned' AND return_status IS NOT NULL AND condition_on_return IS NOT NULL AND CHAR_LENGTH(TRIM(condition_on_return))>0));
-ALTER TABLE `equipment_loan_details` ADD CONSTRAINT `chk_equipment_return_result` CHECK (return_date IS NULL OR return_status=IF(late_days>0,'late','on_time'));
-ALTER TABLE loan_details ADD COLUMN active_copy_id INT UNSIGNED GENERATED ALWAYS AS (CASE WHEN return_date IS NULL THEN copy_id ELSE NULL END) VIRTUAL, ADD UNIQUE KEY uq_loan_details_active_copy(active_copy_id);
-ALTER TABLE equipment ADD CONSTRAINT chk_equipment_stock_buckets CHECK (available_quantity + unavailable_quantity <= total_quantity);
+ALTER TABLE `dau_sach` ADD CONSTRAINT `chk_books_pages` CHECK (so_trang IS NULL OR so_trang > 0);
+ALTER TABLE `sach_dien_tu` ADD CONSTRAINT `chk_ebooks_size` CHECK (dung_luong_mb IS NULL OR dung_luong_mb > 0);
+ALTER TABLE `chi_tiet_yeu_cau_muon_sach` ADD CONSTRAINT `chk_book_request_quantity` CHECK (so_luong > 0);
+ALTER TABLE `chi_tiet_yeu_cau_muon_thiet_bi` ADD CONSTRAINT `chk_equipment_request_quantity` CHECK (so_luong > 0);
+ALTER TABLE `thiet_bi` ADD CONSTRAINT `chk_equipment_quantities` CHECK (tong_so_luong > 0 AND so_luong_san_sang >= 0 AND so_luong_san_sang <= tong_so_luong);
+ALTER TABLE `phong` ADD CONSTRAINT `chk_rooms_capacity` CHECK (suc_chua > 0);
+ALTER TABLE `yeu_cau_dat_phong` ADD CONSTRAINT `chk_room_request_time` CHECK (ngay_su_dung >= '1000-01-01' AND gio_bat_dau >= '00:00:00' AND gio_bat_dau < gio_ket_thuc AND gio_ket_thuc <= '24:00:00');
+ALTER TABLE `gia_han_sach` ADD CONSTRAINT `chk_extensions_dates` CHECK (han_tra_cu >= '1000-01-01' AND han_tra_moi > han_tra_cu AND ngay_gia_han >= '1000-01-01');
+ALTER TABLE `chi_tiet_muon_sach` ADD CONSTRAINT `chk_loan_dates` CHECK (ngay_muon >= '1000-01-01' AND han_tra >= ngay_muon AND (ngay_tra IS NULL OR ngay_tra >= ngay_muon));
+ALTER TABLE `chi_tiet_muon_sach` ADD CONSTRAINT `chk_loan_extensions` CHECK (so_lan_gia_han <= 3);
+ALTER TABLE `chi_tiet_muon_sach` ADD CONSTRAINT `chk_loan_return_state` CHECK ((ngay_tra IS NULL AND trang_thai IN ('borrowed','overdue') AND ket_qua_tra IS NULL AND so_ngay_tre=0 AND tinh_trang_khi_tra IS NULL) OR (ngay_tra IS NOT NULL AND trang_thai='returned' AND ket_qua_tra IS NOT NULL AND tinh_trang_khi_tra IS NOT NULL AND CHAR_LENGTH(TRIM(tinh_trang_khi_tra))>0));
+ALTER TABLE `chi_tiet_muon_sach` ADD CONSTRAINT `chk_loan_return_result` CHECK (ngay_tra IS NULL OR ket_qua_tra=IF(so_ngay_tre>0,'late','on_time'));
+ALTER TABLE `chi_tiet_muon_thiet_bi` ADD CONSTRAINT `chk_equipment_loan_quantity` CHECK (so_luong > 0);
+ALTER TABLE `chi_tiet_muon_thiet_bi` ADD CONSTRAINT `chk_equipment_loan_dates` CHECK (ngay_muon >= '1000-01-01' AND han_tra >= ngay_muon AND (ngay_tra IS NULL OR ngay_tra >= ngay_muon));
+ALTER TABLE `chi_tiet_muon_thiet_bi` ADD CONSTRAINT `chk_equipment_return_state` CHECK ((ngay_tra IS NULL AND trang_thai IN ('borrowed','overdue') AND ket_qua_tra IS NULL AND so_ngay_tre=0 AND tinh_trang_khi_tra IS NULL) OR (ngay_tra IS NOT NULL AND trang_thai='returned' AND ket_qua_tra IS NOT NULL AND tinh_trang_khi_tra IS NOT NULL AND CHAR_LENGTH(TRIM(tinh_trang_khi_tra))>0));
+ALTER TABLE `chi_tiet_muon_thiet_bi` ADD CONSTRAINT `chk_equipment_return_result` CHECK (ngay_tra IS NULL OR ket_qua_tra=IF(so_ngay_tre>0,'late','on_time'));
+ALTER TABLE chi_tiet_muon_sach ADD COLUMN khoa_ban_sach_dang_muon INT UNSIGNED GENERATED ALWAYS AS (CASE WHEN ngay_tra IS NULL THEN ma_ban_sach ELSE NULL END) VIRTUAL, ADD UNIQUE KEY uq_loan_details_active_copy(khoa_ban_sach_dang_muon);
+ALTER TABLE thiet_bi ADD CONSTRAINT chk_equipment_stock_buckets CHECK (so_luong_san_sang + so_luong_khong_kha_dung <= tong_so_luong);
 
 SET FOREIGN_KEY_CHECKS = 1;

@@ -20,7 +20,7 @@ function book_relation_names(PDO $pdo, string $relation, int $bookId, bool $orde
     $orderColumn = $orderByName ? $column : 'id';
 
     $statement = $pdo->prepare(<<<SQL
-        SELECT n.id, n.`$column` AS name
+        SELECT n.ma, n.`$column` AS name
         FROM `$relation` n
         JOIN `$pivot` p ON p.`$foreignKey` = n.id
         WHERE p.book_id = :book_id
@@ -51,47 +51,47 @@ function catalog_books(PDO $pdo, ?string $search, ?string $language, ?string $ye
 
     $where = implode("\n    AND ", $conditions);
     $statement = $pdo->prepare(<<<SQL
-        SELECT b.id, b.title, b.publication_year, b.language, b.cover_image,
-               p.name AS publisher,
-               authors.names AS authors,
-               genres.names AS genres,
-               keywords.names AS keywords,
+        SELECT b.ma, b.ten_sach, b.nam_xuat_ban, b.ngon_ngu, b.anh_bia,
+               p.ten AS publisher,
+               tac_gia.names AS tac_gia,
+               the_loai.names AS the_loai,
+               tu_khoa.names AS tu_khoa,
                COALESCE(stock.copy_count, 0) AS copy_count,
                COALESCE(stock.available_copies, 0) AS available_copies,
-               EXISTS (SELECT 1 FROM ebooks e WHERE e.book_id = b.id) AS has_ebook
-        FROM books b
-        JOIN publishers p ON p.id = b.publisher_id
+               EXISTS (SELECT 1 FROM sach_dien_tu e WHERE e.ma_dau_sach = b.ma) AS has_ebook
+        FROM dau_sach b
+        JOIN nha_xuat_ban p ON p.ma = b.ma_nha_xuat_ban
         LEFT JOIN (
-            SELECT ba.book_id,
-                   GROUP_CONCAT(DISTINCT a.full_name ORDER BY a.full_name SEPARATOR ', ') AS names
-            FROM book_authors ba
-            JOIN authors a ON a.id = ba.author_id
-            GROUP BY ba.book_id
-        ) authors ON authors.book_id = b.id
+            SELECT ba.ma_dau_sach,
+                   GROUP_CONCAT(DISTINCT a.ho_ten ORDER BY a.ho_ten SEPARATOR ', ') AS names
+            FROM dau_sach_tac_gia ba
+            JOIN tac_gia a ON a.ma = ba.ma_tac_gia
+            GROUP BY ba.ma_dau_sach
+        ) tac_gia ON tac_gia.ma_dau_sach = b.ma
         LEFT JOIN (
-            SELECT bg.book_id,
-                   GROUP_CONCAT(DISTINCT g.name ORDER BY g.name SEPARATOR ', ') AS names
-            FROM book_genres bg
-            JOIN genres g ON g.id = bg.genre_id
-            GROUP BY bg.book_id
-        ) genres ON genres.book_id = b.id
+            SELECT bg.ma_dau_sach,
+                   GROUP_CONCAT(DISTINCT g.ten ORDER BY g.ten SEPARATOR ', ') AS names
+            FROM dau_sach_the_loai bg
+            JOIN the_loai g ON g.ma = bg.ma_the_loai
+            GROUP BY bg.ma_dau_sach
+        ) the_loai ON the_loai.ma_dau_sach = b.ma
         LEFT JOIN (
-            SELECT bk.book_id,
-                   GROUP_CONCAT(DISTINCT k.name ORDER BY k.name SEPARATOR ', ') AS names
-            FROM book_keywords bk
-            JOIN keywords k ON k.id = bk.keyword_id
-            GROUP BY bk.book_id
-        ) keywords ON keywords.book_id = b.id
+            SELECT bk.ma_dau_sach,
+                   GROUP_CONCAT(DISTINCT k.ten ORDER BY k.ten SEPARATOR ', ') AS names
+            FROM dau_sach_tu_khoa bk
+            JOIN tu_khoa k ON k.ma = bk.ma_tu_khoa
+            GROUP BY bk.ma_dau_sach
+        ) tu_khoa ON tu_khoa.ma_dau_sach = b.ma
         LEFT JOIN (
-            SELECT c.book_id, COUNT(*) AS copy_count,
-                   COUNT(CASE WHEN c.status = 'available' THEN 1 END) AS available_copies
-            FROM book_copies c
-            WHERE c.is_visible = 1
-              AND c.deleted_at IS NULL
-            GROUP BY c.book_id
-        ) stock ON stock.book_id = b.id
+            SELECT c.ma_dau_sach, COUNT(*) AS copy_count,
+                   COUNT(CASE WHEN c.trang_thai = 'available' THEN 1 END) AS available_copies
+            FROM ban_sach c
+            WHERE c.hien_thi = 1
+              AND c.thoi_diem_xoa IS NULL
+            GROUP BY c.ma_dau_sach
+        ) stock ON stock.ma_dau_sach = b.ma
         WHERE $where
-        ORDER BY b.id DESC
+        ORDER BY b.ma DESC
         SQL);
     $statement->execute($parameters);
     return $statement->fetchAll();
@@ -100,26 +100,26 @@ function catalog_books(PDO $pdo, ?string $search, ?string $language, ?string $ye
 function popular_books(PDO $pdo, int $limit): array
 {
     $statement = $pdo->prepare(<<<'SQL'
-        SELECT b.id, b.title, b.cover_image,
+        SELECT b.ma, b.ten_sach, b.anh_bia,
                COALESCE(loans.borrow_count, 0) AS borrow_count,
-               authors.names AS authors
-        FROM books b
+               tac_gia.names AS tac_gia
+        FROM dau_sach b
         JOIN (
-            SELECT c.book_id, COUNT(ld.id) AS borrow_count
-            FROM book_copies c
-            LEFT JOIN loan_details ld ON ld.copy_id = c.id
-            GROUP BY c.book_id
-        ) loans ON loans.book_id = b.id
+            SELECT c.ma_dau_sach, COUNT(ld.ma) AS borrow_count
+            FROM ban_sach c
+            LEFT JOIN chi_tiet_muon_sach ld ON ld.ma_ban_sach = c.ma
+            GROUP BY c.ma_dau_sach
+        ) loans ON loans.ma_dau_sach = b.ma
         LEFT JOIN (
-            SELECT ba.book_id,
-                   GROUP_CONCAT(DISTINCT a.full_name ORDER BY a.full_name SEPARATOR ', ') AS names
-            FROM book_authors ba
-            JOIN authors a ON a.id = ba.author_id
-            GROUP BY ba.book_id
-        ) authors ON authors.book_id = b.id
-        WHERE b.is_visible = 1
-          AND b.deleted_at IS NULL
-        ORDER BY borrow_count DESC, b.title
+            SELECT ba.ma_dau_sach,
+                   GROUP_CONCAT(DISTINCT a.ho_ten ORDER BY a.ho_ten SEPARATOR ', ') AS names
+            FROM dau_sach_tac_gia ba
+            JOIN tac_gia a ON a.ma = ba.ma_tac_gia
+            GROUP BY ba.ma_dau_sach
+        ) tac_gia ON tac_gia.ma_dau_sach = b.ma
+        WHERE b.hien_thi = 1
+          AND b.thoi_diem_xoa IS NULL
+        ORDER BY borrow_count DESC, b.ten_sach
         LIMIT :limit
         SQL);
     $statement->bindValue('limit', max(1, min($limit, 100)), PDO::PARAM_INT);
@@ -130,27 +130,27 @@ function popular_books(PDO $pdo, int $limit): array
 function assistant_book_catalog(PDO $pdo): array
 {
     return $pdo->query(<<<'SQL'
-        SELECT b.id, b.title,
-               LEFT(COALESCE(b.summary, b.description, ''), 800) AS summary,
-               b.language,
+        SELECT b.ma, b.ten_sach,
+               LEFT(COALESCE(b.tom_tat, b.mo_ta, ''), 800) AS tom_tat,
+               b.ngon_ngu,
                (
-                   SELECT GROUP_CONCAT(a.full_name SEPARATOR ', ')
-                   FROM authors a
-                   JOIN book_authors ba ON ba.author_id = a.id
-                   WHERE ba.book_id = b.id
-               ) AS authors,
+                   SELECT GROUP_CONCAT(a.ho_ten SEPARATOR ', ')
+                   FROM tac_gia a
+                   JOIN dau_sach_tac_gia ba ON ba.ma_tac_gia = a.ma
+                   WHERE ba.ma_dau_sach = b.ma
+               ) AS tac_gia,
                (
-                   SELECT GROUP_CONCAT(g.name SEPARATOR ', ')
-                   FROM genres g
-                   JOIN book_genres bg ON bg.genre_id = g.id
-                   WHERE bg.book_id = b.id
-               ) AS genres,
-               e.file_path
-        FROM books b
-        LEFT JOIN ebooks e ON e.book_id = b.id
-        WHERE b.is_visible = 1
-          AND b.deleted_at IS NULL
-        ORDER BY b.title
+                   SELECT GROUP_CONCAT(g.ten SEPARATOR ', ')
+                   FROM the_loai g
+                   JOIN dau_sach_the_loai bg ON bg.ma_the_loai = g.ma
+                   WHERE bg.ma_dau_sach = b.ma
+               ) AS the_loai,
+               e.duong_dan_tep
+        FROM dau_sach b
+        LEFT JOIN sach_dien_tu e ON e.ma_dau_sach = b.ma
+        WHERE b.hien_thi = 1
+          AND b.thoi_diem_xoa IS NULL
+        ORDER BY b.ten_sach
         SQL)->fetchAll();
 }
 
@@ -163,31 +163,31 @@ function learning_book_stock(PDO $pdo, array $bookIds): array
     // Only placeholder count is interpolated; book IDs remain bound values.
     $placeholders = implode(', ', array_fill(0, count($bookIds), '?'));
     $statement = $pdo->prepare(<<<SQL
-        SELECT b.id, b.title,
+        SELECT b.ma, b.ten_sach,
                (
-                   SELECT GROUP_CONCAT(a.full_name SEPARATOR ', ')
-                   FROM authors a
-                   JOIN book_authors ba ON ba.author_id = a.id
-                   WHERE ba.book_id = b.id
-               ) AS authors,
+                   SELECT GROUP_CONCAT(a.ho_ten SEPARATOR ', ')
+                   FROM tac_gia a
+                   JOIN dau_sach_tac_gia ba ON ba.ma_tac_gia = a.ma
+                   WHERE ba.ma_dau_sach = b.ma
+               ) AS tac_gia,
                (
                    SELECT COUNT(*)
-                   FROM book_copies c
-                   WHERE c.book_id = b.id
-                     AND c.status = 'available'
-                     AND c.is_visible = 1
-                     AND c.deleted_at IS NULL
+                   FROM ban_sach c
+                   WHERE c.ma_dau_sach = b.ma
+                     AND c.trang_thai = 'available'
+                     AND c.hien_thi = 1
+                     AND c.thoi_diem_xoa IS NULL
                ) AS available_copies,
                EXISTS (
                    SELECT 1
-                   FROM ebooks e
-                   WHERE e.book_id = b.id
-                     AND UPPER(e.file_format) = 'PDF'
+                   FROM sach_dien_tu e
+                   WHERE e.ma_dau_sach = b.ma
+                     AND UPPER(e.dinh_dang_tep) = 'PDF'
                ) AS has_ebook
-        FROM books b
-        WHERE b.is_visible = 1
-          AND b.deleted_at IS NULL
-          AND b.id IN ($placeholders)
+        FROM dau_sach b
+        WHERE b.hien_thi = 1
+          AND b.thoi_diem_xoa IS NULL
+          AND b.ma IN ($placeholders)
         SQL);
     $statement->execute(array_values($bookIds));
     return $statement->fetchAll();

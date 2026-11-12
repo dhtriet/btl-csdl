@@ -40,3 +40,5 @@ Students request book renewals from their own active loans. Librarians approve t
 - Support keyboard navigation and smaller viewports.
 
 Equipment and room renewals use the same student-request/librarian-review workflow. Room extensions keep the booking day and check overlap under locks; equipment extensions preserve stock. Apply scripts/migrate-resource-extensions.php before serving the updated UI.
+
+Physical MySQL/MariaDB tables and columns use Vietnamese snake_case names. database/vietnamese-identifiers.json is the single mapping; app/sql_names.php translates dynamic SQL identifiers and normalizes result keys to the stable API contract. Migrate existing databases with scripts/migrate-vietnamese-schema.php; canonical schema and SQL data files already use Vietnamese names.

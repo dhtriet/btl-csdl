@@ -13,12 +13,12 @@ function resource_accessible(PDO $pdo, string $table, int $id, bool $allowStaff 
         throw new InvalidArgumentException('Invalid resource type');
     }
 
-    $visibilityCondition = $allowStaff && resource_staff_access() ? '' : 'AND is_visible = 1';
+    $visibilityCondition = $allowStaff && resource_staff_access() ? '' : 'AND hien_thi = 1';
     $statement = $pdo->prepare(<<<SQL
-        SELECT id
+        SELECT ma
         FROM `$table`
-        WHERE id = :id
-          AND deleted_at IS NULL
+        WHERE ma = :id
+          AND thoi_diem_xoa IS NULL
           $visibilityCondition
         SQL);
     $statement->execute(['id' => $id]);

@@ -27,10 +27,10 @@ if (!$bookId || $bookId < 1) {
 }
 
 $statement = Database::connection()->prepare(
-    'SELECT b.title, e.file_path
-     FROM books b
-     LEFT JOIN ebooks e ON e.book_id = b.id
-     WHERE b.id = :id
+    'SELECT b.ten_sach, e.duong_dan_tep
+     FROM dau_sach b
+     LEFT JOIN sach_dien_tu e ON e.ma_dau_sach = b.ma
+     WHERE b.ma = :id
      LIMIT 1'
 );
 $statement->execute(['id' => $bookId]);

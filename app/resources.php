@@ -18,11 +18,11 @@ function managed_publisher_id(PDO $pdo,array $body): int
     $name=resource_text($body,'publisher_name',160,true);
     $name=preg_replace('/\s+/u',' ',$name);
     // Serialize this small shared catalog while the enclosing book transaction is open.
-    $pdo->query('SELECT id FROM publishers ORDER BY id FOR UPDATE')->fetchAll();
-    $q=$pdo->prepare('SELECT id FROM publishers WHERE name=? ORDER BY id LIMIT 1');$q->execute([$name]);
+    $pdo->query('SELECT ma FROM nha_xuat_ban ORDER BY ma FOR UPDATE')->fetchAll();
+    $q=$pdo->prepare('SELECT ma FROM nha_xuat_ban WHERE ten=? ORDER BY ma LIMIT 1');$q->execute([$name]);
     $id=$q->fetchColumn();
     if ($id!==false) return (int)$id;
-    $q=$pdo->prepare('INSERT INTO publishers (name) VALUES (?)');$q->execute([$name]);
+    $q=$pdo->prepare('INSERT INTO nha_xuat_ban (ten) VALUES (?)');$q->execute([$name]);
     return (int)$pdo->lastInsertId();
 }
 
@@ -102,7 +102,7 @@ function validate_resource(PDO $pdo, string $type, array $body, ?array $old): ar
         if ($data['cover_image'] !== null && !preg_match('~^/uploads/covers/[a-f0-9]{32}\.(jpg|png|webp)$~D', $data['cover_image'])) {
             if (!$old || $data['cover_image'] !== $old['cover_image']) throw new ApiException('Hãy tải ảnh bìa bằng nút chọn ảnh.');
         }
-        $q = $pdo->prepare('SELECT id FROM publishers WHERE id = ?'); $q->execute([$data['publisher_id']]);
+        $q = $pdo->prepare('SELECT ma FROM nha_xuat_ban WHERE ma = ?'); $q->execute([$data['publisher_id']]);
         if (!$q->fetch()) throw new ApiException('Nhà xuất bản không tồn tại.');
         return $common+$data;
     }
@@ -115,13 +115,13 @@ function validate_resource(PDO $pdo, string $type, array $body, ?array $old): ar
             'status' => resource_enum($body,'status',['available','borrowed','damaged','lost']),
         ];
         if ($old) {
-            $q = $pdo->prepare('SELECT 1 FROM loan_details WHERE copy_id = ? AND return_date IS NULL LIMIT 1'); $q->execute([$old['id']]);
+            $q = $pdo->prepare('SELECT 1 FROM chi_tiet_muon_sach WHERE ma_ban_sach = ? AND ngay_tra IS NULL LIMIT 1'); $q->execute([$old['id']]);
             if ($q->fetchColumn() !== false) throw new ApiException('Bản sách đang được mượn. Hãy ghi nhận trả trước khi chỉnh sửa.',409);
         }
         if ($data['status'] === 'borrowed') throw new ApiException('Trạng thái đang mượn do nghiệp vụ duyệt mượn quản lý.');
         if (in_array($data['condition_status'], ['damaged','lost'], true) && $data['status'] !== $data['condition_status']) throw new ApiException('Tình trạng hỏng/mất phải khớp trạng thái bản sách.');
         if ($data['status'] === 'available' && !in_array($data['condition_status'], ['good','worn'],true)) throw new ApiException('Bản sách không đủ điều kiện cho mượn.');
-        $q=$pdo->prepare('SELECT id FROM books WHERE id = ? AND deleted_at IS NULL'); $q->execute([$data['book_id']]);
+        $q=$pdo->prepare('SELECT ma FROM dau_sach WHERE ma = ? AND thoi_diem_xoa IS NULL'); $q->execute([$data['book_id']]);
         if (!$q->fetch()) throw new ApiException('Đầu sách không tồn tại.');
         return $common+$data;
     }
@@ -182,7 +182,7 @@ function save_book_names(PDO $pdo, int $bookId, array $body): void
 
         $delete = $pdo->prepare("DELETE FROM `$pivot` WHERE book_id = :book_id");
         $delete->execute(['book_id' => $bookId]);
-        $find = $pdo->prepare("SELECT id FROM `$table` WHERE `$column` = :name ORDER BY id LIMIT 1");
+        $find = $pdo->prepare("SELECT ma FROM `$table` WHERE `$column` = :name ORDER BY id LIMIT 1");
         $insertSql = "INSERT INTO `$table` (`$column`) VALUES (:name)";
         // Unique genre/keyword names serialize concurrent inserts without renaming existing rows.
         if ($table !== 'authors') {
@@ -208,8 +208,8 @@ function manage_resources(PDO $pdo, string $method, ?string $type, ?string $rawI
     require_staff();
     if ($type === 'options' && $method === 'GET') {
         json_response(['data'=>[
-            'publishers'=>$pdo->query('SELECT id,name FROM publishers ORDER BY name')->fetchAll(),
-            'books'=>$pdo->query('SELECT id,title FROM books WHERE deleted_at IS NULL ORDER BY title')->fetchAll(),
+            'publishers'=>$pdo->query('SELECT ma,ten FROM nha_xuat_ban ORDER BY ten')->fetchAll(),
+            'books'=>$pdo->query('SELECT ma,ten_sach FROM dau_sach WHERE thoi_diem_xoa IS NULL ORDER BY ten_sach')->fetchAll(),
         ]]);
     }
     if (in_array($type,['cover','image'],true) && $method === 'POST') {
@@ -261,14 +261,14 @@ function manage_resources(PDO $pdo, string $method, ?string $type, ?string $rawI
         $data=validate_resource($pdo,$type,$body,$old);
         if ($old) {
             $fields=implode(',',array_map(static fn($key)=>"`$key` = ?",array_keys($data)));
-            $pdo->prepare("UPDATE `$table` SET $fields WHERE id = ?")->execute([...array_values($data),$id]);
+            $pdo->prepare("UPDATE `$table` SET $fields WHERE ma = ?")->execute([...array_values($data),$id]);
         } else {
             $columns=implode(',',array_map(static fn($key)=>"`$key`",array_keys($data))); $slots=implode(',',array_fill(0,count($data),'?'));
             $pdo->prepare("INSERT INTO `$table` ($columns) VALUES ($slots)")->execute(array_values($data)); $id=(int)$pdo->lastInsertId();
         }
         if ($type==='books') save_book_names($pdo,$id,$body);
         if ($type==='equipment' && (!$old || (int)$old['total_quantity'] !== (int)$data['total_quantity'])) {
-            $active=$pdo->prepare('SELECT COALESCE(SUM(quantity),0) FROM equipment_loan_details WHERE equipment_id=? AND return_date IS NULL');
+            $active=$pdo->prepare('SELECT COALESCE(SUM(so_luong),0) FROM chi_tiet_muon_thiet_bi WHERE ma_thiet_bi=? AND ngay_tra IS NULL');
             $active->execute([$id]); $onLoan=(int)$active->fetchColumn();
             $blocked=(int)($old['unavailable_quantity'] ?? 0);
             if ((int)$data['total_quantity'] !== (int)$data['available_quantity']+$blocked+$onLoan) throw new ApiException('Tồn kho chưa cân bằng. Hãy kiểm tra số đang mượn và số không khả dụng trước khi sửa số lượng.',409);

@@ -1,24 +1,24 @@
-CREATE TABLE IF NOT EXISTS extension_requests (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    loan_detail_id INT UNSIGNED NOT NULL,
-    old_due_date DATE NOT NULL,
-    requested_due_date DATE NOT NULL,
-    reason VARCHAR(500) NOT NULL DEFAULT '',
-    status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
-    requested_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    librarian_id INT UNSIGNED NULL,
-    reviewed_at DATETIME NULL,
-    review_note VARCHAR(500) NULL,
-    extension_id INT UNSIGNED NULL UNIQUE,
-    pending_loan_id INT UNSIGNED GENERATED ALWAYS AS (CASE WHEN status='pending' THEN loan_detail_id ELSE NULL END) STORED,
-    UNIQUE KEY uq_extension_pending (pending_loan_id),
-    CONSTRAINT fk_extension_request_loan FOREIGN KEY (loan_detail_id) REFERENCES loan_details(id),
-    CONSTRAINT fk_extension_request_staff FOREIGN KEY (librarian_id) REFERENCES librarians(id),
-    CONSTRAINT fk_extension_request_result FOREIGN KEY (extension_id) REFERENCES extensions(id),
-    CONSTRAINT chk_extension_request_dates CHECK (requested_due_date > old_due_date),
+CREATE TABLE IF NOT EXISTS yeu_cau_gia_han_sach (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ma_chi_tiet_muon_sach INT UNSIGNED NOT NULL,
+    han_tra_cu DATE NOT NULL,
+    han_tra_de_nghi DATE NOT NULL,
+    ly_do VARCHAR(500) NOT NULL DEFAULT '',
+    trang_thai ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+    thoi_diem_gui_yeu_cau DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ma_ho_so_thu_thu INT UNSIGNED NULL,
+    thoi_diem_xet_duyet DATETIME NULL,
+    ghi_chu_xet_duyet VARCHAR(500) NULL,
+    ma_gia_han INT UNSIGNED NULL UNIQUE,
+    khoa_cho_duyet_muon_sach INT UNSIGNED GENERATED ALWAYS AS (CASE WHEN trang_thai='pending' THEN ma_chi_tiet_muon_sach ELSE NULL END) STORED,
+    UNIQUE KEY uq_extension_pending (khoa_cho_duyet_muon_sach),
+    CONSTRAINT fk_extension_request_loan FOREIGN KEY (ma_chi_tiet_muon_sach) REFERENCES chi_tiet_muon_sach(ma),
+    CONSTRAINT fk_extension_request_staff FOREIGN KEY (ma_ho_so_thu_thu) REFERENCES thu_thu(ma),
+    CONSTRAINT fk_extension_request_result FOREIGN KEY (ma_gia_han) REFERENCES gia_han_sach(ma),
+    CONSTRAINT chk_extension_request_dates CHECK (han_tra_de_nghi > han_tra_cu),
     CONSTRAINT chk_extension_request_review CHECK (
-        (status='pending' AND librarian_id IS NULL AND reviewed_at IS NULL AND extension_id IS NULL)
-        OR (status='approved' AND librarian_id IS NOT NULL AND reviewed_at IS NOT NULL AND extension_id IS NOT NULL)
-        OR (status='rejected' AND librarian_id IS NOT NULL AND reviewed_at IS NOT NULL AND extension_id IS NULL)
+        (trang_thai='pending' AND ma_ho_so_thu_thu IS NULL AND thoi_diem_xet_duyet IS NULL AND ma_gia_han IS NULL)
+        OR (trang_thai='approved' AND ma_ho_so_thu_thu IS NOT NULL AND thoi_diem_xet_duyet IS NOT NULL AND ma_gia_han IS NOT NULL)
+        OR (trang_thai='rejected' AND ma_ho_so_thu_thu IS NOT NULL AND thoi_diem_xet_duyet IS NOT NULL AND ma_gia_han IS NULL)
     )
 ) ENGINE=InnoDB;

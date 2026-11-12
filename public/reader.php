@@ -25,12 +25,12 @@ if (!$bookId || $bookId < 1) {
 }
 
 $statement = Database::connection()->prepare(
-    'SELECT b.title, b.publication_year, b.summary, p.name AS publisher,
-            e.file_format, e.file_size_mb, e.resolution, e.file_path AS ebook_path
-     FROM books b
-     JOIN publishers p ON p.id = b.publisher_id
-     LEFT JOIN ebooks e ON e.book_id = b.id
-     WHERE b.id = :id
+    'SELECT b.ten_sach, b.nam_xuat_ban, b.tom_tat, p.ten AS publisher,
+            e.dinh_dang_tep, e.dung_luong_mb, e.do_phan_giai, e.duong_dan_tep AS ebook_path
+     FROM dau_sach b
+     JOIN nha_xuat_ban p ON p.ma = b.ma_nha_xuat_ban
+     LEFT JOIN sach_dien_tu e ON e.ma_dau_sach = b.ma
+     WHERE b.ma = :id
      LIMIT 1'
 );
 $statement->execute(['id' => $bookId]);

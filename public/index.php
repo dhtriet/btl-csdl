@@ -84,14 +84,14 @@ function route_api(PDO $pdo, string $method, array $segments): void
         $password = (string) ($body['password'] ?? '');
 
         $query = $pdo->prepare(
-            "SELECT a.id, a.username, a.password, a.full_name, a.role,
-                    s.id AS student_id, s.student_code, s.faculty, s.class_name,
-                    l.id AS librarian_id, l.librarian_code
-             FROM accounts a
-             LEFT JOIN students s ON s.account_id = a.id
-             LEFT JOIN librarians l ON l.account_id = a.id
-             WHERE a.username = :username
-             LIMIT 1"
+            'SELECT a.ma, a.ten_dang_nhap, a.mat_khau, a.ho_ten, a.vai_tro,
+                    s.ma AS ma_ho_so_sinh_vien, s.ma_sinh_vien, s.khoa, s.lop,
+                    l.ma AS ma_ho_so_thu_thu, l.ma_thu_thu
+             FROM tai_khoan a
+             LEFT JOIN sinh_vien s ON s.ma_tai_khoan = a.ma
+             LEFT JOIN thu_thu l ON l.ma_tai_khoan = a.ma
+             WHERE a.ten_dang_nhap = :username
+             LIMIT 1'
         );
         $query->execute(['username' => $username]);
         $account = $query->fetch();
@@ -104,7 +104,7 @@ function route_api(PDO $pdo, string $method, array $segments): void
         }
 
         if (!$hashed || password_needs_rehash($stored,PASSWORD_BCRYPT)) {
-            $upgrade=$pdo->prepare('UPDATE accounts SET password = ? WHERE id = ? AND password = ?');
+            $upgrade=$pdo->prepare('UPDATE tai_khoan SET mat_khau = ? WHERE ma = ? AND mat_khau = ?');
             $upgrade->execute([password_hash($password,PASSWORD_BCRYPT),$account['id'],$stored]);
         }
         session_regenerate_id(true);
@@ -135,9 +135,9 @@ function route_api(PDO $pdo, string $method, array $segments): void
         $user = current_user();
         if ($user && !empty($user['id'])) {
             $statement = $pdo->prepare(
-                'SELECT a.full_name, s.faculty, s.class_name
-                 FROM accounts a LEFT JOIN students s ON s.account_id = a.id
-                 WHERE a.id = :id LIMIT 1'
+                'SELECT a.ho_ten, s.khoa, s.lop
+                 FROM tai_khoan a LEFT JOIN sinh_vien s ON s.ma_tai_khoan = a.ma
+                 WHERE a.ma = :id LIMIT 1'
             );
             $statement->execute(['id' => $user['id']]);
             if ($account = $statement->fetch()) {
@@ -280,7 +280,7 @@ function route_api(PDO $pdo, string $method, array $segments): void
     if ($resource === 'equipment' && $id === 'overdue' && $method === 'GET') {
         $user = require_login();
         if ($user['role'] === 'student') {
-            $q=$pdo->prepare("SELECT e.name, eld.quantity, DATEDIFF(CURDATE(),eld.due_date) AS overdue_days FROM equipment_loan_details eld JOIN equipment_loans el ON el.id=eld.loan_id JOIN equipment e ON e.id=eld.equipment_id WHERE el.student_id=? AND eld.return_date IS NULL AND eld.due_date<CURDATE() ORDER BY eld.due_date");
+            $q=$pdo->prepare('SELECT e.ten, eld.so_luong, DATEDIFF(CURDATE(),eld.han_tra) AS overdue_days FROM chi_tiet_muon_thiet_bi eld JOIN phieu_muon_thiet_bi el ON el.ma=eld.ma_phieu_muon_thiet_bi JOIN thiet_bi e ON e.ma=eld.ma_thiet_bi WHERE el.ma_ho_so_sinh_vien=? AND eld.ngay_tra IS NULL AND eld.han_tra<CURDATE() ORDER BY eld.han_tra');
             $q->execute([$user['student_id']]);
             json_response(['data'=>$q->fetchAll()]);
         }
@@ -344,15 +344,15 @@ function route_api(PDO $pdo, string $method, array $segments): void
 function profile_data(PDO $pdo, int $accountId): array
 {
     $statement = $pdo->prepare(
-        "SELECT a.id, a.username, a.full_name, a.date_of_birth, a.email, a.phone,
-                a.address, a.registered_at, a.role,
-                s.student_code, s.faculty, s.class_name,
-                l.librarian_code
-         FROM accounts a
-         LEFT JOIN students s ON s.account_id = a.id
-         LEFT JOIN librarians l ON l.account_id = a.id
-         WHERE a.id = :id
-         LIMIT 1"
+        'SELECT a.ma, a.ten_dang_nhap, a.ho_ten, a.ngay_sinh, a.thu_dien_tu, a.so_dien_thoai,
+                a.dia_chi, a.thoi_diem_dang_ky, a.vai_tro,
+                s.ma_sinh_vien, s.khoa, s.lop,
+                l.ma_thu_thu
+         FROM tai_khoan a
+         LEFT JOIN sinh_vien s ON s.ma_tai_khoan = a.ma
+         LEFT JOIN thu_thu l ON l.ma_tai_khoan = a.ma
+         WHERE a.ma = :id
+         LIMIT 1'
     );
     $statement->execute(['id' => $accountId]);
     $profile = $statement->fetch();
@@ -394,10 +394,10 @@ function update_profile(PDO $pdo, int $accountId): array
     $pdo->beginTransaction();
     try {
         $account = $pdo->prepare(
-            'UPDATE accounts
-             SET full_name = :full_name, date_of_birth = :date_of_birth, email = :email,
-                 phone = :phone, address = :address
-             WHERE id = :id'
+            'UPDATE tai_khoan
+             SET ho_ten = :full_name, ngay_sinh = :date_of_birth, thu_dien_tu = :email,
+                 so_dien_thoai = :phone, dia_chi = :address
+             WHERE ma = :id'
         );
         $account->execute([
             'full_name' => $fullName,
@@ -408,7 +408,7 @@ function update_profile(PDO $pdo, int $accountId): array
             'id' => $accountId,
         ]);
 
-        $student = $pdo->prepare('UPDATE students SET faculty = :faculty, class_name = :class_name WHERE account_id = :account_id');
+        $student = $pdo->prepare('UPDATE sinh_vien SET khoa = :faculty, lop = :class_name WHERE ma_tai_khoan = :account_id');
         $student->execute([
             'faculty' => $faculty,
             'class_name' => $className,
@@ -442,30 +442,30 @@ function dashboard_data(PDO $pdo): array
     if ($user['role'] === 'student') {
         $studentId = (int) $user['student_id'];
         $loans = $pdo->prepare(
-            "SELECT 'book' AS resource_type, b.title AS resource_name, ld.due_date, 1 AS quantity,
-                    (ld.due_date < CURDATE()) AS overdue
-             FROM loan_details ld
-             JOIN loan_receipts lr ON lr.id = ld.receipt_id
-             JOIN book_copies bc ON bc.id = ld.copy_id
-             JOIN books b ON b.id = bc.book_id
-             WHERE lr.student_id = :book_student AND ld.return_date IS NULL
+            'SELECT \'book\' AS resource_type, b.ten_sach AS resource_name, ld.han_tra, 1 AS so_luong,
+                    (ld.han_tra < CURDATE()) AS overdue
+             FROM chi_tiet_muon_sach ld
+             JOIN phieu_muon_sach lr ON lr.ma = ld.ma_phieu_muon_sach
+             JOIN ban_sach bc ON bc.ma = ld.ma_ban_sach
+             JOIN dau_sach b ON b.ma = bc.ma_dau_sach
+             WHERE lr.ma_ho_so_sinh_vien = :book_student AND ld.ngay_tra IS NULL
              UNION ALL
-             SELECT 'equipment' AS resource_type, e.name AS resource_name, eld.due_date, eld.quantity,
-                    (eld.due_date < CURDATE()) AS overdue
-             FROM equipment_loan_details eld
-             JOIN equipment_loans el ON el.id = eld.loan_id
-             JOIN equipment e ON e.id = eld.equipment_id
-             WHERE el.student_id = :equipment_student AND eld.return_date IS NULL
-             ORDER BY due_date ASC"
+             SELECT \'equipment\' AS resource_type, e.ten AS resource_name, eld.han_tra, eld.so_luong,
+                    (eld.han_tra < CURDATE()) AS overdue
+             FROM chi_tiet_muon_thiet_bi eld
+             JOIN phieu_muon_thiet_bi el ON el.ma = eld.ma_phieu_muon_thiet_bi
+             JOIN thiet_bi e ON e.ma = eld.ma_thiet_bi
+             WHERE el.ma_ho_so_sinh_vien = :equipment_student AND eld.ngay_tra IS NULL
+             ORDER BY han_tra ASC'
         );
         $loans->execute(['book_student' => $studentId, 'equipment_student' => $studentId]);
         $activeLoans = $loans->fetchAll();
         $rooms = $pdo->prepare(
-            "SELECT rr.id, r.name, rr.use_date, rr.start_time, rr.end_time, rr.status
-             FROM room_requests rr JOIN rooms r ON r.id = rr.room_id
-             WHERE rr.student_id = :student AND rr.status IN ('pending', 'approved')
-               AND (rr.use_date > CURDATE() OR (rr.use_date = CURDATE() AND rr.end_time > CURTIME()))
-             ORDER BY rr.use_date, rr.start_time"
+            'SELECT rr.ma, r.ten, rr.ngay_su_dung, rr.gio_bat_dau, rr.gio_ket_thuc, rr.trang_thai
+             FROM yeu_cau_dat_phong rr JOIN phong r ON r.ma = rr.ma_phong
+             WHERE rr.ma_ho_so_sinh_vien = :student AND rr.trang_thai IN (\'pending\', \'approved\')
+               AND (rr.ngay_su_dung > CURDATE() OR (rr.ngay_su_dung = CURDATE() AND rr.gio_ket_thuc > CURTIME()))
+             ORDER BY rr.ngay_su_dung, rr.gio_bat_dau'
         );
         $rooms->execute(['student' => $studentId]);
         $requests = student_borrow_requests($pdo, $studentId);
@@ -498,10 +498,10 @@ function book_detail(PDO $pdo, int $bookId): array
 {
     if (!resource_accessible($pdo,'books',$bookId)) throw new ApiException('Không tìm thấy sách.',404);
     $statement = $pdo->prepare(
-        "SELECT b.*, p.name AS publisher, p.address AS publisher_address,
-                p.email AS publisher_email
-         FROM books b JOIN publishers p ON p.id = b.publisher_id
-         WHERE b.id = :id"
+        'SELECT b.*, p.ten AS publisher, p.dia_chi AS publisher_address,
+                p.thu_dien_tu AS publisher_email
+         FROM dau_sach b JOIN nha_xuat_ban p ON p.ma = b.ma_nha_xuat_ban
+         WHERE b.ma = :id'
     );
     $statement->execute(['id' => $bookId]);
     $book = $statement->fetch();
@@ -513,12 +513,12 @@ function book_detail(PDO $pdo, int $bookId): array
     $book['genres'] = book_relation_names($pdo, 'genres', $bookId);
     $book['keywords'] = book_relation_names($pdo, 'keywords', $bookId);
 
-    $ebook = $pdo->prepare('SELECT id, file_format, file_size_mb, resolution, file_path FROM ebooks WHERE book_id = :id');
+    $ebook = $pdo->prepare('SELECT ma, dinh_dang_tep, dung_luong_mb, do_phan_giai, duong_dan_tep FROM sach_dien_tu WHERE ma_dau_sach = :id');
     $ebook->execute(['id' => $bookId]);
     $book['ebook'] = $ebook->fetch() ?: null;
 
-    $copyVisibility=resource_staff_access()?'':' AND is_visible = 1';
-    $copies = $pdo->prepare('SELECT id, barcode, storage_location, condition_status, status FROM book_copies WHERE book_id = :id AND deleted_at IS NULL'.$copyVisibility.' ORDER BY barcode');
+    $copyVisibility=resource_staff_access()?'':' AND hien_thi = 1';
+    $copies = $pdo->prepare('SELECT ma, ma_vach, vi_tri_luu_tru, tinh_trang, trang_thai FROM ban_sach WHERE ma_dau_sach = :id AND thoi_diem_xoa IS NULL'.$copyVisibility.' ORDER BY ma_vach');
     $copies->execute(['id' => $bookId]);
     $book['copies'] = $copies->fetchAll();
 
@@ -616,11 +616,11 @@ function create_book_loan_request(PDO $pdo): array
     $body = request_body();
     $items = book_request_items($body);
     $checkBook = $pdo->prepare(
-        "SELECT b.id, COUNT(c.id) AS available_count
-         FROM books b
-         LEFT JOIN book_copies c ON c.book_id = b.id AND c.status = 'available' AND c.is_visible = 1 AND c.deleted_at IS NULL
-         WHERE b.id = :id AND b.is_visible = 1 AND b.deleted_at IS NULL
-         GROUP BY b.id"
+        'SELECT b.ma, COUNT(c.ma) AS available_count
+         FROM dau_sach b
+         LEFT JOIN ban_sach c ON c.ma_dau_sach = b.ma AND c.trang_thai = \'available\' AND c.hien_thi = 1 AND c.thoi_diem_xoa IS NULL
+         WHERE b.ma = :id AND b.hien_thi = 1 AND b.thoi_diem_xoa IS NULL
+         GROUP BY b.ma'
     );
     foreach ($items as $item) {
         $checkBook->execute(['id' => $item['book_id']]);
@@ -633,18 +633,18 @@ function create_book_loan_request(PDO $pdo): array
     $pdo->beginTransaction();
     try {
         $guard = $pdo->prepare(
-            'SELECT id FROM books WHERE id = ? AND is_visible = 1 AND deleted_at IS NULL FOR UPDATE'
+            'SELECT ma FROM dau_sach WHERE ma = ? AND hien_thi = 1 AND thoi_diem_xoa IS NULL FOR UPDATE'
         );
         foreach ($items as $item) {
             $guard->execute([$item['book_id']]);
             if (!$guard->fetchColumn()) throw new ApiException('Đầu sách đã ngừng hiển thị. Hãy tải lại kho sách.',409);
         }
-        $request = $pdo->prepare('INSERT INTO book_loan_requests (student_id, note) VALUES (:student_id, :note)');
+        $request = $pdo->prepare('INSERT INTO yeu_cau_muon_sach (ma_ho_so_sinh_vien, ghi_chu) VALUES (:student_id, :note)');
         $request->execute(['student_id' => $user['student_id'], 'note' => request_note($body)]);
         $requestId = (int) $pdo->lastInsertId();
 
         $detail = $pdo->prepare(
-            'INSERT INTO book_loan_request_items (request_id, book_id, quantity, requested_due_date)
+            'INSERT INTO chi_tiet_yeu_cau_muon_sach (ma_yeu_cau, ma_dau_sach, so_luong, han_tra_de_nghi)
              VALUES (:request_id, :book_id, :quantity, :requested_due_date)'
         );
         foreach ($items as $item) {
@@ -672,9 +672,9 @@ function create_equipment_loan_request(PDO $pdo): array
     $body = request_body();
     $items = equipment_request_items($body);
     $checkEquipment = $pdo->prepare(
-        "SELECT id
-         FROM equipment
-         WHERE id = :id AND status = 'available' AND is_visible=1 AND deleted_at IS NULL AND available_quantity >= :quantity"
+        'SELECT ma
+         FROM thiet_bi
+         WHERE ma = :id AND trang_thai = \'available\' AND hien_thi=1 AND thoi_diem_xoa IS NULL AND so_luong_san_sang >= :quantity'
     );
     foreach ($items as $item) {
         $checkEquipment->execute(['id' => $item['equipment_id'], 'quantity' => $item['quantity']]);
@@ -686,18 +686,18 @@ function create_equipment_loan_request(PDO $pdo): array
     $pdo->beginTransaction();
     try {
         $guard = $pdo->prepare(
-            'SELECT id FROM equipment WHERE id = ? AND is_visible = 1 AND deleted_at IS NULL FOR UPDATE'
+            'SELECT ma FROM thiet_bi WHERE ma = ? AND hien_thi = 1 AND thoi_diem_xoa IS NULL FOR UPDATE'
         );
         foreach ($items as $item) {
             $guard->execute([$item['equipment_id']]);
             if (!$guard->fetchColumn()) throw new ApiException('Thiết bị đã ngừng hiển thị. Hãy tải lại danh sách.',409);
         }
-        $request = $pdo->prepare('INSERT INTO equipment_loan_requests (student_id, note) VALUES (:student_id, :note)');
+        $request = $pdo->prepare('INSERT INTO yeu_cau_muon_thiet_bi (ma_ho_so_sinh_vien, ghi_chu) VALUES (:student_id, :note)');
         $request->execute(['student_id' => $user['student_id'], 'note' => request_note($body)]);
         $requestId = (int) $pdo->lastInsertId();
 
         $detail = $pdo->prepare(
-            'INSERT INTO equipment_loan_request_items (request_id, equipment_id, quantity, requested_due_date)
+            'INSERT INTO chi_tiet_yeu_cau_muon_thiet_bi (ma_yeu_cau, ma_thiet_bi, so_luong, han_tra_de_nghi)
              VALUES (:request_id, :equipment_id, :quantity, :requested_due_date)'
         );
         foreach ($items as $item) {
@@ -756,18 +756,18 @@ function create_room_request(PDO $pdo): array
 
     $pdo->beginTransaction();
     try {
-        $room = $pdo->prepare('SELECT id FROM rooms WHERE id = :id AND status = \'available\' AND is_visible=1 AND deleted_at IS NULL FOR UPDATE');
+        $room = $pdo->prepare('SELECT ma FROM phong WHERE ma = :id AND trang_thai = \'available\' AND hien_thi=1 AND thoi_diem_xoa IS NULL FOR UPDATE');
         $room->execute(['id' => $roomId]);
         if (!$room->fetch()) {
             throw new ApiException('Phong nay khong con san sang.');
         }
 
         $conflict = $pdo->prepare(
-            "SELECT 1 FROM room_requests
-             WHERE room_id = :room_id AND use_date = :use_date
-               AND status IN ('pending', 'approved')
-               AND start_time < :end_time AND end_time > :start_time
-             LIMIT 1"
+            'SELECT 1 FROM yeu_cau_dat_phong
+             WHERE ma_phong = :room_id AND ngay_su_dung = :use_date
+               AND trang_thai IN (\'pending\', \'approved\')
+               AND gio_bat_dau < :end_time AND gio_ket_thuc > :start_time
+             LIMIT 1'
         );
         $conflict->execute([
             'room_id' => $roomId,
@@ -780,8 +780,8 @@ function create_room_request(PDO $pdo): array
         }
 
         $request = $pdo->prepare(
-            "INSERT INTO room_requests (student_id, room_id, use_date, start_time, end_time, purpose, status)
-             VALUES (:student_id, :room_id, :use_date, :start_time, :end_time, :purpose, 'pending')"
+            'INSERT INTO yeu_cau_dat_phong (ma_ho_so_sinh_vien, ma_phong, ngay_su_dung, gio_bat_dau, gio_ket_thuc, muc_dich, trang_thai)
+             VALUES (:student_id, :room_id, :use_date, :start_time, :end_time, :purpose, \'pending\')'
         );
         $request->execute([
             'student_id' => $user['student_id'],
@@ -806,31 +806,31 @@ function create_room_request(PDO $pdo): array
 function student_borrow_requests(PDO $pdo, int $studentId): array
 {
     $statement = $pdo->prepare(
-        "SELECT 'book' AS request_type, r.id, r.requested_at, r.status, r.note, r.review_note,
-                GROUP_CONCAT(CONCAT(b.title, ' · Số lượng: ', i.quantity, ' (hạn ', DATE_FORMAT(i.requested_due_date, '%d/%m/%Y'), ')') ORDER BY i.id SEPARATOR ' | ') AS items
-         FROM book_loan_requests r
-         JOIN book_loan_request_items i ON i.request_id = r.id
-         JOIN books b ON b.id = i.book_id
-         WHERE r.student_id = :book_student_id
-         GROUP BY r.id, r.requested_at, r.status, r.note, r.review_note
+        'SELECT \'book\' AS request_type, r.ma, r.thoi_diem_gui_yeu_cau, r.trang_thai, r.ghi_chu, r.ghi_chu_xet_duyet,
+                GROUP_CONCAT(CONCAT(b.ten_sach, \' · Số lượng: \', i.so_luong, \' (hạn \', DATE_FORMAT(i.han_tra_de_nghi, \'%d/%m/%Y\'), \')\') ORDER BY i.ma SEPARATOR \' | \') AS items
+         FROM yeu_cau_muon_sach r
+         JOIN chi_tiet_yeu_cau_muon_sach i ON i.ma_yeu_cau = r.ma
+         JOIN dau_sach b ON b.ma = i.ma_dau_sach
+         WHERE r.ma_ho_so_sinh_vien = :book_student_id
+         GROUP BY r.ma, r.thoi_diem_gui_yeu_cau, r.trang_thai, r.ghi_chu, r.ghi_chu_xet_duyet
          UNION ALL
-         SELECT 'equipment' AS request_type, r.id, r.requested_at, r.status, r.note, r.review_note,
-                GROUP_CONCAT(CONCAT(e.name, ' x', i.quantity, ' (hạn ', DATE_FORMAT(i.requested_due_date, '%d/%m/%Y'), ')') ORDER BY i.id SEPARATOR ' | ') AS items
-         FROM equipment_loan_requests r
-         JOIN equipment_loan_request_items i ON i.request_id = r.id
-         JOIN equipment e ON e.id = i.equipment_id
-         WHERE r.student_id = :equipment_student_id
-         GROUP BY r.id, r.requested_at, r.status, r.note, r.review_note
+         SELECT \'equipment\' AS request_type, r.ma, r.thoi_diem_gui_yeu_cau, r.trang_thai, r.ghi_chu, r.ghi_chu_xet_duyet,
+                GROUP_CONCAT(CONCAT(e.ten, \' x\', i.so_luong, \' (hạn \', DATE_FORMAT(i.han_tra_de_nghi, \'%d/%m/%Y\'), \')\') ORDER BY i.ma SEPARATOR \' | \') AS items
+         FROM yeu_cau_muon_thiet_bi r
+         JOIN chi_tiet_yeu_cau_muon_thiet_bi i ON i.ma_yeu_cau = r.ma
+         JOIN thiet_bi e ON e.ma = i.ma_thiet_bi
+         WHERE r.ma_ho_so_sinh_vien = :equipment_student_id
+         GROUP BY r.ma, r.thoi_diem_gui_yeu_cau, r.trang_thai, r.ghi_chu, r.ghi_chu_xet_duyet
          UNION ALL
-         SELECT 'room' AS request_type, rr.id, rr.created_at AS requested_at, rr.status,
-                NULL AS note, NULL AS review_note,
-                CONCAT(r.name, ' - ', DATE_FORMAT(rr.use_date, '%d/%m/%Y'), ' ',
-                       TIME_FORMAT(rr.start_time, '%H:%i'), '-', TIME_FORMAT(rr.end_time, '%H:%i'),
-                       ' (', rr.purpose, ')') AS items
-         FROM room_requests rr
-         JOIN rooms r ON r.id = rr.room_id
-         WHERE rr.student_id = :room_student_id
-         ORDER BY requested_at DESC"
+         SELECT \'room\' AS request_type, rr.ma, rr.thoi_diem_tao AS thoi_diem_gui_yeu_cau, rr.trang_thai,
+                NULL AS ghi_chu, NULL AS ghi_chu_xet_duyet,
+                CONCAT(r.ten, \' - \', DATE_FORMAT(rr.ngay_su_dung, \'%d/%m/%Y\'), \' \',
+                       TIME_FORMAT(rr.gio_bat_dau, \'%H:%i\'), \'-\', TIME_FORMAT(rr.gio_ket_thuc, \'%H:%i\'),
+                       \' (\', rr.muc_dich, \')\') AS items
+         FROM yeu_cau_dat_phong rr
+         JOIN phong r ON r.ma = rr.ma_phong
+         WHERE rr.ma_ho_so_sinh_vien = :room_student_id
+         ORDER BY thoi_diem_gui_yeu_cau DESC'
     );
     $statement->execute([
         'book_student_id' => $studentId,
@@ -844,38 +844,38 @@ function pending_borrow_requests(PDO $pdo, int $limit = 50): array
 {
     $limit = max(1, min($limit, 100));
     $statement = $pdo->prepare(
-        "SELECT 'book' AS request_type, r.id, r.requested_at, 'Mượn sách' AS request_label,
-                a.full_name AS student_name, s.student_code,
-                GROUP_CONCAT(CONCAT(b.title, ' · Số lượng: ', i.quantity, ' (hạn ', DATE_FORMAT(i.requested_due_date, '%d/%m/%Y'), ')') ORDER BY i.id SEPARATOR ' | ') AS items
-         FROM book_loan_requests r
-         JOIN students s ON s.id = r.student_id
-         JOIN accounts a ON a.id = s.account_id
-         JOIN book_loan_request_items i ON i.request_id = r.id
-         JOIN books b ON b.id = i.book_id
-         WHERE r.status = 'pending'
-         GROUP BY r.id, r.requested_at, a.full_name, s.student_code
+        'SELECT \'book\' AS request_type, r.ma, r.thoi_diem_gui_yeu_cau, \'Mượn sách\' AS request_label,
+                a.ho_ten AS student_name, s.ma_sinh_vien,
+                GROUP_CONCAT(CONCAT(b.ten_sach, \' · Số lượng: \', i.so_luong, \' (hạn \', DATE_FORMAT(i.han_tra_de_nghi, \'%d/%m/%Y\'), \')\') ORDER BY i.ma SEPARATOR \' | \') AS items
+         FROM yeu_cau_muon_sach r
+         JOIN sinh_vien s ON s.ma = r.ma_ho_so_sinh_vien
+         JOIN tai_khoan a ON a.ma = s.ma_tai_khoan
+         JOIN chi_tiet_yeu_cau_muon_sach i ON i.ma_yeu_cau = r.ma
+         JOIN dau_sach b ON b.ma = i.ma_dau_sach
+         WHERE r.trang_thai = \'pending\'
+         GROUP BY r.ma, r.thoi_diem_gui_yeu_cau, a.ho_ten, s.ma_sinh_vien
          UNION ALL
-         SELECT 'equipment' AS request_type, r.id, r.requested_at, 'Mượn thiết bị' AS request_label,
-                a.full_name AS student_name, s.student_code,
-                GROUP_CONCAT(CONCAT(e.name, ' x', i.quantity, ' (hạn ', DATE_FORMAT(i.requested_due_date, '%d/%m/%Y'), ')') ORDER BY i.id SEPARATOR ' | ') AS items
-         FROM equipment_loan_requests r
-         JOIN students s ON s.id = r.student_id
-         JOIN accounts a ON a.id = s.account_id
-         JOIN equipment_loan_request_items i ON i.request_id = r.id
-         JOIN equipment e ON e.id = i.equipment_id
-         WHERE r.status = 'pending'
-         GROUP BY r.id, r.requested_at, a.full_name, s.student_code
+         SELECT \'equipment\' AS request_type, r.ma, r.thoi_diem_gui_yeu_cau, \'Mượn thiết bị\' AS request_label,
+                a.ho_ten AS student_name, s.ma_sinh_vien,
+                GROUP_CONCAT(CONCAT(e.ten, \' x\', i.so_luong, \' (hạn \', DATE_FORMAT(i.han_tra_de_nghi, \'%d/%m/%Y\'), \')\') ORDER BY i.ma SEPARATOR \' | \') AS items
+         FROM yeu_cau_muon_thiet_bi r
+         JOIN sinh_vien s ON s.ma = r.ma_ho_so_sinh_vien
+         JOIN tai_khoan a ON a.ma = s.ma_tai_khoan
+         JOIN chi_tiet_yeu_cau_muon_thiet_bi i ON i.ma_yeu_cau = r.ma
+         JOIN thiet_bi e ON e.ma = i.ma_thiet_bi
+         WHERE r.trang_thai = \'pending\'
+         GROUP BY r.ma, r.thoi_diem_gui_yeu_cau, a.ho_ten, s.ma_sinh_vien
          UNION ALL
-         SELECT 'room' AS request_type, rr.id, rr.created_at AS requested_at, 'Đặt phòng' AS request_label,
-                a.full_name AS student_name, s.student_code,
-                CONCAT(r.name, ' - ', DATE_FORMAT(rr.use_date, '%d/%m/%Y'), ' ', TIME_FORMAT(rr.start_time, '%H:%i'), '-', TIME_FORMAT(rr.end_time, '%H:%i'), ' (', rr.purpose, ')') AS items
-         FROM room_requests rr
-         JOIN students s ON s.id = rr.student_id
-         JOIN accounts a ON a.id = s.account_id
-         JOIN rooms r ON r.id = rr.room_id
-         WHERE rr.status = 'pending'
-         ORDER BY requested_at ASC
-         LIMIT :limit"
+         SELECT \'room\' AS request_type, rr.ma, rr.thoi_diem_tao AS thoi_diem_gui_yeu_cau, \'Đặt phòng\' AS request_label,
+                a.ho_ten AS student_name, s.ma_sinh_vien,
+                CONCAT(r.ten, \' - \', DATE_FORMAT(rr.ngay_su_dung, \'%d/%m/%Y\'), \' \', TIME_FORMAT(rr.gio_bat_dau, \'%H:%i\'), \'-\', TIME_FORMAT(rr.gio_ket_thuc, \'%H:%i\'), \' (\', rr.muc_dich, \')\') AS items
+         FROM yeu_cau_dat_phong rr
+         JOIN sinh_vien s ON s.ma = rr.ma_ho_so_sinh_vien
+         JOIN tai_khoan a ON a.ma = s.ma_tai_khoan
+         JOIN phong r ON r.ma = rr.ma_phong
+         WHERE rr.trang_thai = \'pending\'
+         ORDER BY thoi_diem_gui_yeu_cau ASC
+         LIMIT :limit'
     );
     $statement->bindValue('limit', $limit, PDO::PARAM_INT);
     $statement->execute();
@@ -886,56 +886,56 @@ function reviewed_borrow_requests(PDO $pdo, int $limit = 100): array
 {
     $limit = max(1, min($limit, 200));
     $statement = $pdo->prepare(
-        "SELECT * FROM (
-            SELECT 'book' AS request_type, r.id, r.requested_at, r.reviewed_at, r.status,
-                   r.note AS request_note, r.review_note,
-                   'Mượn sách' AS request_label, a.full_name AS student_name, s.student_code,
-                   GROUP_CONCAT(CONCAT(b.title, ' · Số lượng: ', i.quantity, ' (hạn ', DATE_FORMAT(i.requested_due_date, '%d/%m/%Y'), ')') ORDER BY i.id SEPARATOR ' | ') AS items,
-                   la.full_name AS librarian_name
-            FROM book_loan_requests r
-            JOIN students s ON s.id = r.student_id
-            JOIN accounts a ON a.id = s.account_id
-            LEFT JOIN librarians l ON l.id = r.librarian_id
-            LEFT JOIN accounts la ON la.id = l.account_id
-            JOIN book_loan_request_items i ON i.request_id = r.id
-            JOIN books b ON b.id = i.book_id
-            WHERE r.status IN ('approved', 'rejected')
-            GROUP BY r.id, r.requested_at, r.reviewed_at, r.status, r.note, r.review_note,
-                     a.full_name, s.student_code, la.full_name
+        'SELECT * FROM (
+            SELECT \'book\' AS request_type, r.ma, r.thoi_diem_gui_yeu_cau, r.thoi_diem_xet_duyet, r.trang_thai,
+                   r.ghi_chu AS request_note, r.ghi_chu_xet_duyet,
+                   \'Mượn sách\' AS request_label, a.ho_ten AS student_name, s.ma_sinh_vien,
+                   GROUP_CONCAT(CONCAT(b.ten_sach, \' · Số lượng: \', i.so_luong, \' (hạn \', DATE_FORMAT(i.han_tra_de_nghi, \'%d/%m/%Y\'), \')\') ORDER BY i.ma SEPARATOR \' | \') AS items,
+                   la.ho_ten AS librarian_name
+            FROM yeu_cau_muon_sach r
+            JOIN sinh_vien s ON s.ma = r.ma_ho_so_sinh_vien
+            JOIN tai_khoan a ON a.ma = s.ma_tai_khoan
+            LEFT JOIN thu_thu l ON l.ma = r.ma_ho_so_thu_thu
+            LEFT JOIN tai_khoan la ON la.ma = l.ma_tai_khoan
+            JOIN chi_tiet_yeu_cau_muon_sach i ON i.ma_yeu_cau = r.ma
+            JOIN dau_sach b ON b.ma = i.ma_dau_sach
+            WHERE r.trang_thai IN (\'approved\', \'rejected\')
+            GROUP BY r.ma, r.thoi_diem_gui_yeu_cau, r.thoi_diem_xet_duyet, r.trang_thai, r.ghi_chu, r.ghi_chu_xet_duyet,
+                     a.ho_ten, s.ma_sinh_vien, la.ho_ten
             UNION ALL
-            SELECT 'equipment' AS request_type, r.id, r.requested_at, r.reviewed_at, r.status,
-                   r.note AS request_note, r.review_note,
-                   'Mượn thiết bị' AS request_label, a.full_name AS student_name, s.student_code,
-                   GROUP_CONCAT(CONCAT(e.name, ' x', i.quantity, ' (hạn ', DATE_FORMAT(i.requested_due_date, '%d/%m/%Y'), ')') ORDER BY i.id SEPARATOR ' | ') AS items,
-                   la.full_name AS librarian_name
-            FROM equipment_loan_requests r
-            JOIN students s ON s.id = r.student_id
-            JOIN accounts a ON a.id = s.account_id
-            LEFT JOIN librarians l ON l.id = r.librarian_id
-            LEFT JOIN accounts la ON la.id = l.account_id
-            JOIN equipment_loan_request_items i ON i.request_id = r.id
-            JOIN equipment e ON e.id = i.equipment_id
-            WHERE r.status IN ('approved', 'rejected')
-            GROUP BY r.id, r.requested_at, r.reviewed_at, r.status, r.note, r.review_note,
-                     a.full_name, s.student_code, la.full_name
+            SELECT \'equipment\' AS request_type, r.ma, r.thoi_diem_gui_yeu_cau, r.thoi_diem_xet_duyet, r.trang_thai,
+                   r.ghi_chu AS request_note, r.ghi_chu_xet_duyet,
+                   \'Mượn thiết bị\' AS request_label, a.ho_ten AS student_name, s.ma_sinh_vien,
+                   GROUP_CONCAT(CONCAT(e.ten, \' x\', i.so_luong, \' (hạn \', DATE_FORMAT(i.han_tra_de_nghi, \'%d/%m/%Y\'), \')\') ORDER BY i.ma SEPARATOR \' | \') AS items,
+                   la.ho_ten AS librarian_name
+            FROM yeu_cau_muon_thiet_bi r
+            JOIN sinh_vien s ON s.ma = r.ma_ho_so_sinh_vien
+            JOIN tai_khoan a ON a.ma = s.ma_tai_khoan
+            LEFT JOIN thu_thu l ON l.ma = r.ma_ho_so_thu_thu
+            LEFT JOIN tai_khoan la ON la.ma = l.ma_tai_khoan
+            JOIN chi_tiet_yeu_cau_muon_thiet_bi i ON i.ma_yeu_cau = r.ma
+            JOIN thiet_bi e ON e.ma = i.ma_thiet_bi
+            WHERE r.trang_thai IN (\'approved\', \'rejected\')
+            GROUP BY r.ma, r.thoi_diem_gui_yeu_cau, r.thoi_diem_xet_duyet, r.trang_thai, r.ghi_chu, r.ghi_chu_xet_duyet,
+                     a.ho_ten, s.ma_sinh_vien, la.ho_ten
             UNION ALL
-            SELECT 'room' AS request_type, rr.id, rr.created_at AS requested_at, rr.reviewed_at,
-                   rr.status, NULL AS request_note, rr.review_note,
-                   'Đặt phòng' AS request_label, a.full_name AS student_name, s.student_code,
-                   CONCAT(r.name, ' - ', DATE_FORMAT(rr.use_date, '%d/%m/%Y'), ' ',
-                          TIME_FORMAT(rr.start_time, '%H:%i'), '-', TIME_FORMAT(rr.end_time, '%H:%i'),
-                          ' (', rr.purpose, ')') AS items,
-                   la.full_name AS librarian_name
-            FROM room_requests rr
-            JOIN students s ON s.id = rr.student_id
-            JOIN accounts a ON a.id = s.account_id
-            LEFT JOIN librarians l ON l.id = rr.librarian_id
-            LEFT JOIN accounts la ON la.id = l.account_id
-            JOIN rooms r ON r.id = rr.room_id
-            WHERE rr.status IN ('approved', 'rejected', 'completed')
+            SELECT \'room\' AS request_type, rr.ma, rr.thoi_diem_tao AS thoi_diem_gui_yeu_cau, rr.thoi_diem_xet_duyet,
+                   rr.trang_thai, NULL AS request_note, rr.ghi_chu_xet_duyet,
+                   \'Đặt phòng\' AS request_label, a.ho_ten AS student_name, s.ma_sinh_vien,
+                   CONCAT(r.ten, \' - \', DATE_FORMAT(rr.ngay_su_dung, \'%d/%m/%Y\'), \' \',
+                          TIME_FORMAT(rr.gio_bat_dau, \'%H:%i\'), \'-\', TIME_FORMAT(rr.gio_ket_thuc, \'%H:%i\'),
+                          \' (\', rr.muc_dich, \')\') AS items,
+                   la.ho_ten AS librarian_name
+            FROM yeu_cau_dat_phong rr
+            JOIN sinh_vien s ON s.ma = rr.ma_ho_so_sinh_vien
+            JOIN tai_khoan a ON a.ma = s.ma_tai_khoan
+            LEFT JOIN thu_thu l ON l.ma = rr.ma_ho_so_thu_thu
+            LEFT JOIN tai_khoan la ON la.ma = l.ma_tai_khoan
+            JOIN phong r ON r.ma = rr.ma_phong
+            WHERE rr.trang_thai IN (\'approved\', \'rejected\', \'completed\')
         ) reviewed_requests
-        ORDER BY reviewed_at DESC, requested_at DESC
-        LIMIT :limit"
+        ORDER BY thoi_diem_xet_duyet DESC, thoi_diem_gui_yeu_cau DESC
+        LIMIT :limit'
     );
     $statement->bindValue('limit', $limit, PDO::PARAM_INT);
     $statement->execute();
@@ -968,7 +968,7 @@ function review_book_request(PDO $pdo, int $requestId, int $librarianId, string 
     $ownsTransaction = !$pdo->inTransaction();
     if ($ownsTransaction) $pdo->beginTransaction();
     try {
-        $request = $pdo->prepare('SELECT * FROM book_loan_requests WHERE id = :id FOR UPDATE');
+        $request = $pdo->prepare('SELECT * FROM yeu_cau_muon_sach WHERE ma = :id FOR UPDATE');
         $request->execute(['id' => $requestId]);
         $header = $request->fetch();
         if (!$header) {
@@ -980,16 +980,16 @@ function review_book_request(PDO $pdo, int $requestId, int $librarianId, string 
 
         if ($decision === 'rejected') {
             $update = $pdo->prepare(
-                "UPDATE book_loan_requests
-                 SET status = 'rejected', librarian_id = :librarian_id, reviewed_at = NOW(), review_note = :review_note
-                 WHERE id = :id"
+                'UPDATE yeu_cau_muon_sach
+                 SET trang_thai = \'rejected\', ma_ho_so_thu_thu = :librarian_id, thoi_diem_xet_duyet = NOW(), ghi_chu_xet_duyet = :review_note
+                 WHERE ma = :id'
             );
             $update->execute(['librarian_id' => $librarianId, 'review_note' => $reviewNote, 'id' => $requestId]);
             if ($ownsTransaction) $pdo->commit();
             return ['id' => $requestId, 'type' => 'book', 'status' => 'rejected'];
         }
 
-        $itemsStatement = $pdo->prepare('SELECT book_id, quantity, requested_due_date FROM book_loan_request_items WHERE request_id = :id ORDER BY book_id');
+        $itemsStatement = $pdo->prepare('SELECT ma_dau_sach, so_luong, han_tra_de_nghi FROM chi_tiet_yeu_cau_muon_sach WHERE ma_yeu_cau = :id ORDER BY ma_dau_sach');
         $itemsStatement->execute(['id' => $requestId]);
         $items = $itemsStatement->fetchAll();
         if ($items === []) {
@@ -997,13 +997,13 @@ function review_book_request(PDO $pdo, int $requestId, int $librarianId, string 
         }
 
         $copyStatement = $pdo->prepare(
-            "SELECT id FROM book_copies
-             WHERE book_id = :book_id AND status = 'available' AND is_visible=1 AND deleted_at IS NULL
-             ORDER BY id FOR UPDATE"
+            'SELECT ma FROM ban_sach
+             WHERE ma_dau_sach = :book_id AND trang_thai = \'available\' AND hien_thi=1 AND thoi_diem_xoa IS NULL
+             ORDER BY ma FOR UPDATE'
         );
         $copies = [];
         $bookGuard = $pdo->prepare(
-            'SELECT id FROM books WHERE id = ? AND is_visible = 1 AND deleted_at IS NULL FOR UPDATE'
+            'SELECT ma FROM dau_sach WHERE ma = ? AND hien_thi = 1 AND thoi_diem_xoa IS NULL FOR UPDATE'
         );
         foreach ($items as $item) {
             if ($item['requested_due_date'] <= date('Y-m-d')) {
@@ -1023,27 +1023,27 @@ function review_book_request(PDO $pdo, int $requestId, int $librarianId, string 
         }
 
         $receipt = $pdo->prepare(
-            "INSERT INTO loan_receipts (student_id, librarian_id, note, status, request_id)
-             VALUES (:student_id, :librarian_id, :note, 'open', :request_id)"
+            'INSERT INTO phieu_muon_sach (ma_ho_so_sinh_vien, ma_ho_so_thu_thu, ghi_chu, trang_thai, ma_yeu_cau)
+             VALUES (:student_id, :librarian_id, :note, \'open\', :request_id)'
         );
         $receiptNote = substr(trim('Duyet yeu cau sach #' . $requestId . ' ' . (string) $header['note']), 0, 255);
         $receipt->execute(['student_id' => $header['student_id'], 'librarian_id' => $librarianId, 'note' => $receiptNote, 'request_id'=>$requestId]);
         $receiptId = (int) $pdo->lastInsertId();
 
         $loanDetail = $pdo->prepare(
-            "INSERT INTO loan_details (receipt_id, copy_id, borrow_date, due_date, status)
-             VALUES (:receipt_id, :copy_id, CURDATE(), :due_date, 'borrowed')"
+            'INSERT INTO chi_tiet_muon_sach (ma_phieu_muon_sach, ma_ban_sach, ngay_muon, han_tra, trang_thai)
+             VALUES (:receipt_id, :copy_id, CURDATE(), :due_date, \'borrowed\')'
         );
-        $markBorrowed = $pdo->prepare("UPDATE book_copies SET status = 'borrowed' WHERE id = :id");
+        $markBorrowed = $pdo->prepare('UPDATE ban_sach SET trang_thai = \'borrowed\' WHERE ma = :id');
         foreach ($copies as $copy) {
             $loanDetail->execute(['receipt_id' => $receiptId, 'copy_id' => $copy['copy_id'], 'due_date' => $copy['due_date']]);
             $markBorrowed->execute(['id' => $copy['copy_id']]);
         }
 
         $update = $pdo->prepare(
-            "UPDATE book_loan_requests
-             SET status = 'approved', librarian_id = :librarian_id, reviewed_at = NOW(), review_note = :review_note
-             WHERE id = :id"
+            'UPDATE yeu_cau_muon_sach
+             SET trang_thai = \'approved\', ma_ho_so_thu_thu = :librarian_id, thoi_diem_xet_duyet = NOW(), ghi_chu_xet_duyet = :review_note
+             WHERE ma = :id'
         );
         $update->execute(['librarian_id' => $librarianId, 'review_note' => $reviewNote, 'id' => $requestId]);
         if ($ownsTransaction) $pdo->commit();
@@ -1061,7 +1061,7 @@ function review_equipment_request(PDO $pdo, int $requestId, int $librarianId, st
     $ownsTransaction = !$pdo->inTransaction();
     if ($ownsTransaction) $pdo->beginTransaction();
     try {
-        $request = $pdo->prepare('SELECT * FROM equipment_loan_requests WHERE id = :id FOR UPDATE');
+        $request = $pdo->prepare('SELECT * FROM yeu_cau_muon_thiet_bi WHERE ma = :id FOR UPDATE');
         $request->execute(['id' => $requestId]);
         $header = $request->fetch();
         if (!$header) {
@@ -1073,9 +1073,9 @@ function review_equipment_request(PDO $pdo, int $requestId, int $librarianId, st
 
         if ($decision === 'rejected') {
             $update = $pdo->prepare(
-                "UPDATE equipment_loan_requests
-                 SET status = 'rejected', librarian_id = :librarian_id, reviewed_at = NOW(), review_note = :review_note
-                 WHERE id = :id"
+                'UPDATE yeu_cau_muon_thiet_bi
+                 SET trang_thai = \'rejected\', ma_ho_so_thu_thu = :librarian_id, thoi_diem_xet_duyet = NOW(), ghi_chu_xet_duyet = :review_note
+                 WHERE ma = :id'
             );
             $update->execute(['librarian_id' => $librarianId, 'review_note' => $reviewNote, 'id' => $requestId]);
             if ($ownsTransaction) $pdo->commit();
@@ -1083,7 +1083,7 @@ function review_equipment_request(PDO $pdo, int $requestId, int $librarianId, st
         }
 
         $itemsStatement = $pdo->prepare(
-            'SELECT equipment_id, quantity, requested_due_date FROM equipment_loan_request_items WHERE request_id = :id ORDER BY equipment_id'
+            'SELECT ma_thiet_bi, so_luong, han_tra_de_nghi FROM chi_tiet_yeu_cau_muon_thiet_bi WHERE ma_yeu_cau = :id ORDER BY ma_thiet_bi'
         );
         $itemsStatement->execute(['id' => $requestId]);
         $items = $itemsStatement->fetchAll();
@@ -1091,7 +1091,7 @@ function review_equipment_request(PDO $pdo, int $requestId, int $librarianId, st
             throw new ApiException('Yêu cầu mượn thiết bị không có chi tiết.');
         }
 
-        $equipmentStatement = $pdo->prepare('SELECT id, available_quantity, status FROM equipment WHERE id = :id AND is_visible=1 AND deleted_at IS NULL FOR UPDATE');
+        $equipmentStatement = $pdo->prepare('SELECT ma, so_luong_san_sang, trang_thai FROM thiet_bi WHERE ma = :id AND hien_thi=1 AND thoi_diem_xoa IS NULL FOR UPDATE');
         $equipmentUpdates = [];
         foreach ($items as $item) {
             if ($item['requested_due_date'] <= date('Y-m-d')) {
@@ -1111,19 +1111,19 @@ function review_equipment_request(PDO $pdo, int $requestId, int $librarianId, st
         }
 
         $loan = $pdo->prepare(
-            "INSERT INTO equipment_loans (student_id, librarian_id, note, status, request_id)
-             VALUES (:student_id, :librarian_id, :note, 'borrowed', :request_id)"
+            'INSERT INTO phieu_muon_thiet_bi (ma_ho_so_sinh_vien, ma_ho_so_thu_thu, ghi_chu, trang_thai, ma_yeu_cau)
+             VALUES (:student_id, :librarian_id, :note, \'borrowed\', :request_id)'
         );
         $loanNote = substr(trim('Duyet yeu cau thiet bi #' . $requestId . ' ' . (string) $header['note']), 0, 255);
         $loan->execute(['student_id' => $header['student_id'], 'librarian_id' => $librarianId, 'note' => $loanNote, 'request_id'=>$requestId]);
         $loanId = (int) $pdo->lastInsertId();
 
         $loanDetail = $pdo->prepare(
-            "INSERT INTO equipment_loan_details (loan_id, equipment_id, quantity, borrow_date, due_date, condition_on_borrow, status)
-             VALUES (:loan_id, :equipment_id, :quantity, CURDATE(), :due_date, 'Tot', 'borrowed')"
+            'INSERT INTO chi_tiet_muon_thiet_bi (ma_phieu_muon_thiet_bi, ma_thiet_bi, so_luong, ngay_muon, han_tra, tinh_trang_khi_muon, trang_thai)
+             VALUES (:loan_id, :equipment_id, :quantity, CURDATE(), :due_date, \'Tot\', \'borrowed\')'
         );
         $updateEquipment = $pdo->prepare(
-            'UPDATE equipment SET available_quantity = :available_quantity, status = :status WHERE id = :id'
+            'UPDATE thiet_bi SET so_luong_san_sang = :available_quantity, trang_thai = :status WHERE ma = :id'
         );
         foreach ($equipmentUpdates as $item) {
             $loanDetail->execute([
@@ -1140,9 +1140,9 @@ function review_equipment_request(PDO $pdo, int $requestId, int $librarianId, st
         }
 
         $update = $pdo->prepare(
-            "UPDATE equipment_loan_requests
-             SET status = 'approved', librarian_id = :librarian_id, reviewed_at = NOW(), review_note = :review_note
-             WHERE id = :id"
+            'UPDATE yeu_cau_muon_thiet_bi
+             SET trang_thai = \'approved\', ma_ho_so_thu_thu = :librarian_id, thoi_diem_xet_duyet = NOW(), ghi_chu_xet_duyet = :review_note
+             WHERE ma = :id'
         );
         $update->execute(['librarian_id' => $librarianId, 'review_note' => $reviewNote, 'id' => $requestId]);
         if ($ownsTransaction) $pdo->commit();
@@ -1159,7 +1159,7 @@ function review_room_request(PDO $pdo, int $requestId, int $librarianId, string 
 {
     $pdo->beginTransaction();
     try {
-        $request = $pdo->prepare('SELECT * FROM room_requests WHERE id = :id FOR UPDATE');
+        $request = $pdo->prepare('SELECT * FROM yeu_cau_dat_phong WHERE ma = :id FOR UPDATE');
         $request->execute(['id' => $requestId]);
         $header = $request->fetch();
         if (!$header) {
@@ -1170,7 +1170,7 @@ function review_room_request(PDO $pdo, int $requestId, int $librarianId, string 
         }
 
         if ($decision === 'approved') {
-            $room = $pdo->prepare('SELECT status FROM rooms WHERE id = :id AND is_visible=1 AND deleted_at IS NULL FOR UPDATE');
+            $room = $pdo->prepare('SELECT trang_thai FROM phong WHERE ma = :id AND hien_thi=1 AND thoi_diem_xoa IS NULL FOR UPDATE');
             $room->execute(['id' => $header['room_id']]);
             $roomData = $room->fetch();
             if (!$roomData || $roomData['status'] !== 'available') {
@@ -1178,11 +1178,11 @@ function review_room_request(PDO $pdo, int $requestId, int $librarianId, string 
             }
 
             $conflict = $pdo->prepare(
-                "SELECT 1 FROM room_requests
-                 WHERE room_id = :room_id AND id <> :request_id AND use_date = :use_date
-                   AND status = 'approved'
-                   AND start_time < :end_time AND end_time > :start_time
-             LIMIT 1"
+                'SELECT 1 FROM yeu_cau_dat_phong
+                 WHERE ma_phong = :room_id AND ma <> :request_id AND ngay_su_dung = :use_date
+                   AND trang_thai = \'approved\'
+                   AND gio_bat_dau < :end_time AND gio_ket_thuc > :start_time
+             LIMIT 1'
             );
             $conflict->execute([
                 'room_id' => $header['room_id'],
@@ -1197,9 +1197,9 @@ function review_room_request(PDO $pdo, int $requestId, int $librarianId, string 
         }
 
         $update = $pdo->prepare(
-            'UPDATE room_requests
-             SET status = :status, librarian_id = :librarian_id, reviewed_at = NOW(), review_note = :review_note
-             WHERE id = :id'
+            'UPDATE yeu_cau_dat_phong
+             SET trang_thai = :status, ma_ho_so_thu_thu = :librarian_id, thoi_diem_xet_duyet = NOW(), ghi_chu_xet_duyet = :review_note
+             WHERE ma = :id'
         );
         $update->execute([
             'status' => $decision,
@@ -1220,18 +1220,18 @@ function review_room_request(PDO $pdo, int $requestId, int $librarianId, string 
 function overdue_books(PDO $pdo): array
 {
     $statement = $pdo->query(
-        "SELECT ld.id AS loan_detail_id, b.id AS book_id, b.title, c.barcode,
-                s.student_code, a.full_name AS student_name, ld.borrow_date,
-                ld.due_date, DATEDIFF(CURDATE(), ld.due_date) AS overdue_days,
-                ld.extension_count, lr.id AS receipt_id
-         FROM loan_details ld
-         JOIN loan_receipts lr ON lr.id = ld.receipt_id
-         JOIN students s ON s.id = lr.student_id
-         JOIN accounts a ON a.id = s.account_id
-         JOIN book_copies c ON c.id = ld.copy_id
-         JOIN books b ON b.id = c.book_id
-         WHERE ld.return_date IS NULL AND ld.due_date < CURDATE()
-         ORDER BY overdue_days DESC, ld.due_date ASC"
+        'SELECT ld.ma AS ma_chi_tiet_muon_sach, b.ma AS ma_dau_sach, b.ten_sach, c.ma_vach,
+                s.ma_sinh_vien, a.ho_ten AS student_name, ld.ngay_muon,
+                ld.han_tra, DATEDIFF(CURDATE(), ld.han_tra) AS overdue_days,
+                ld.so_lan_gia_han, lr.ma AS ma_phieu_muon_sach
+         FROM chi_tiet_muon_sach ld
+         JOIN phieu_muon_sach lr ON lr.ma = ld.ma_phieu_muon_sach
+         JOIN sinh_vien s ON s.ma = lr.ma_ho_so_sinh_vien
+         JOIN tai_khoan a ON a.ma = s.ma_tai_khoan
+         JOIN ban_sach c ON c.ma = ld.ma_ban_sach
+         JOIN dau_sach b ON b.ma = c.ma_dau_sach
+         WHERE ld.ngay_tra IS NULL AND ld.han_tra < CURDATE()
+         ORDER BY overdue_days DESC, ld.han_tra ASC'
     );
     return $statement->fetchAll();
 }
@@ -1239,22 +1239,22 @@ function overdue_books(PDO $pdo): array
 function returned_books(PDO $pdo): array
 {
     $statement = $pdo->query(
-        "SELECT ld.id AS loan_detail_id, lr.id AS receipt_id, b.title, c.barcode, s.student_code,
-                a.full_name AS student_name, ld.borrow_date, ld.due_date,
-                ld.return_date, ld.extension_count,
-                CASE WHEN ld.return_status = 'late' THEN 'Tra tre'
-                     WHEN ld.return_status = 'on_time' THEN 'Tra dung han'
-                     WHEN ld.return_date > ld.due_date THEN 'Tra tre' ELSE 'Tra dung han' END AS return_status,
-                CASE WHEN ld.return_status IS NOT NULL THEN ld.late_days
-                     ELSE GREATEST(DATEDIFF(ld.return_date, ld.due_date), 0) END AS late_days
-         FROM loan_details ld
-         JOIN loan_receipts lr ON lr.id = ld.receipt_id
-         JOIN students s ON s.id = lr.student_id
-         JOIN accounts a ON a.id = s.account_id
-         JOIN book_copies c ON c.id = ld.copy_id
-         JOIN books b ON b.id = c.book_id
-         WHERE ld.return_date IS NOT NULL
-         ORDER BY ld.return_date DESC"
+        'SELECT ld.ma AS ma_chi_tiet_muon_sach, lr.ma AS ma_phieu_muon_sach, b.ten_sach, c.ma_vach, s.ma_sinh_vien,
+                a.ho_ten AS student_name, ld.ngay_muon, ld.han_tra,
+                ld.ngay_tra, ld.so_lan_gia_han,
+                CASE WHEN ld.ket_qua_tra = \'late\' THEN \'Tra tre\'
+                     WHEN ld.ket_qua_tra = \'on_time\' THEN \'Tra dung han\'
+                     WHEN ld.ngay_tra > ld.han_tra THEN \'Tra tre\' ELSE \'Tra dung han\' END AS ket_qua_tra,
+                CASE WHEN ld.ket_qua_tra IS NOT NULL THEN ld.so_ngay_tre
+                     ELSE GREATEST(DATEDIFF(ld.ngay_tra, ld.han_tra), 0) END AS so_ngay_tre
+         FROM chi_tiet_muon_sach ld
+         JOIN phieu_muon_sach lr ON lr.ma = ld.ma_phieu_muon_sach
+         JOIN sinh_vien s ON s.ma = lr.ma_ho_so_sinh_vien
+         JOIN tai_khoan a ON a.ma = s.ma_tai_khoan
+         JOIN ban_sach c ON c.ma = ld.ma_ban_sach
+         JOIN dau_sach b ON b.ma = c.ma_dau_sach
+         WHERE ld.ngay_tra IS NOT NULL
+         ORDER BY ld.ngay_tra DESC'
     );
     return $statement->fetchAll();
 }
@@ -1262,19 +1262,19 @@ function returned_books(PDO $pdo): array
 function active_book_loans(PDO $pdo): array
 {
     $statement = $pdo->query(
-        "SELECT ld.id AS loan_detail_id, lr.id AS receipt_id, b.title, c.barcode, s.student_code,
-                a.full_name AS student_name, ld.borrow_date, ld.due_date,
-                ld.extension_count,
-                CASE WHEN ld.due_date < CURDATE() THEN 'Qua han' ELSE 'Dang muon' END AS loan_status,
-                DATEDIFF(CURDATE(), ld.due_date) AS overdue_days
-         FROM loan_details ld
-         JOIN loan_receipts lr ON lr.id = ld.receipt_id
-         JOIN students s ON s.id = lr.student_id
-         JOIN accounts a ON a.id = s.account_id
-         JOIN book_copies c ON c.id = ld.copy_id
-         JOIN books b ON b.id = c.book_id
-         WHERE ld.return_date IS NULL
-         ORDER BY (ld.due_date < CURDATE()) DESC, ld.due_date ASC, ld.id ASC"
+        'SELECT ld.ma AS ma_chi_tiet_muon_sach, lr.ma AS ma_phieu_muon_sach, b.ten_sach, c.ma_vach, s.ma_sinh_vien,
+                a.ho_ten AS student_name, ld.ngay_muon, ld.han_tra,
+                ld.so_lan_gia_han,
+                CASE WHEN ld.han_tra < CURDATE() THEN \'Qua han\' ELSE \'Dang muon\' END AS loan_status,
+                DATEDIFF(CURDATE(), ld.han_tra) AS overdue_days
+         FROM chi_tiet_muon_sach ld
+         JOIN phieu_muon_sach lr ON lr.ma = ld.ma_phieu_muon_sach
+         JOIN sinh_vien s ON s.ma = lr.ma_ho_so_sinh_vien
+         JOIN tai_khoan a ON a.ma = s.ma_tai_khoan
+         JOIN ban_sach c ON c.ma = ld.ma_ban_sach
+         JOIN dau_sach b ON b.ma = c.ma_dau_sach
+         WHERE ld.ngay_tra IS NULL
+         ORDER BY (ld.han_tra < CURDATE()) DESC, ld.han_tra ASC, ld.ma ASC'
     );
     return $statement->fetchAll();
 }
@@ -1282,18 +1282,18 @@ function active_book_loans(PDO $pdo): array
 function active_equipment_loans(PDO $pdo): array
 {
     $statement = $pdo->query(
-        "SELECT eld.id AS equipment_detail_id, e.name, e.equipment_type,
-                eld.quantity, s.student_code, a.full_name AS student_name,
-                eld.borrow_date, eld.due_date,
-                CASE WHEN eld.due_date < CURDATE() THEN 'Qua han' ELSE 'Dang muon' END AS loan_status,
-                DATEDIFF(CURDATE(), eld.due_date) AS overdue_days
-         FROM equipment_loan_details eld
-         JOIN equipment_loans el ON el.id = eld.loan_id
-         JOIN equipment e ON e.id = eld.equipment_id
-         JOIN students s ON s.id = el.student_id
-         JOIN accounts a ON a.id = s.account_id
-         WHERE eld.return_date IS NULL
-         ORDER BY (eld.due_date < CURDATE()) DESC, eld.due_date ASC, eld.id ASC"
+        'SELECT eld.ma AS ma_chi_tiet_muon_thiet_bi, e.ten, e.loai_thiet_bi,
+                eld.so_luong, s.ma_sinh_vien, a.ho_ten AS student_name,
+                eld.ngay_muon, eld.han_tra,
+                CASE WHEN eld.han_tra < CURDATE() THEN \'Qua han\' ELSE \'Dang muon\' END AS loan_status,
+                DATEDIFF(CURDATE(), eld.han_tra) AS overdue_days
+         FROM chi_tiet_muon_thiet_bi eld
+         JOIN phieu_muon_thiet_bi el ON el.ma = eld.ma_phieu_muon_thiet_bi
+         JOIN thiet_bi e ON e.ma = eld.ma_thiet_bi
+         JOIN sinh_vien s ON s.ma = el.ma_ho_so_sinh_vien
+         JOIN tai_khoan a ON a.ma = s.ma_tai_khoan
+         WHERE eld.ngay_tra IS NULL
+         ORDER BY (eld.han_tra < CURDATE()) DESC, eld.han_tra ASC, eld.ma ASC'
     );
     return $statement->fetchAll();
 }
@@ -1301,17 +1301,17 @@ function active_equipment_loans(PDO $pdo): array
 function room_usage_history(PDO $pdo): array
 {
     $statement = $pdo->query(
-        "SELECT rr.id AS room_request_id, r.name AS room_name, r.room_type,
-                s.student_code, a.full_name AS student_name, rr.use_date,
-                rr.start_time, rr.end_time, rr.purpose, rr.status,
-                rr.reviewed_at
-         FROM room_requests rr
-         JOIN rooms r ON r.id = rr.room_id
-         JOIN students s ON s.id = rr.student_id
-         JOIN accounts a ON a.id = s.account_id
-         WHERE rr.status IN ('approved', 'completed', 'rejected')
-         ORDER BY rr.use_date DESC, rr.start_time DESC, rr.id DESC
-         LIMIT 30"
+        'SELECT rr.ma AS ma_yeu_cau_dat_phong, r.ten AS room_name, r.loai_phong,
+                s.ma_sinh_vien, a.ho_ten AS student_name, rr.ngay_su_dung,
+                rr.gio_bat_dau, rr.gio_ket_thuc, rr.muc_dich, rr.trang_thai,
+                rr.thoi_diem_xet_duyet
+         FROM yeu_cau_dat_phong rr
+         JOIN phong r ON r.ma = rr.ma_phong
+         JOIN sinh_vien s ON s.ma = rr.ma_ho_so_sinh_vien
+         JOIN tai_khoan a ON a.ma = s.ma_tai_khoan
+         WHERE rr.trang_thai IN (\'approved\', \'completed\', \'rejected\')
+         ORDER BY rr.ngay_su_dung DESC, rr.gio_bat_dau DESC, rr.ma DESC
+         LIMIT 30'
     );
     return $statement->fetchAll();
 }
@@ -1321,11 +1321,11 @@ function mark_room_completed(PDO $pdo, int $roomRequestId): array
     $pdo->beginTransaction();
     try {
         $request = $pdo->prepare(
-            "SELECT rr.id, rr.status, rr.use_date, rr.end_time, r.name AS room_name
-             FROM room_requests rr
-             JOIN rooms r ON r.id = rr.room_id
-             WHERE rr.id = :id
-             FOR UPDATE"
+            'SELECT rr.ma, rr.trang_thai, rr.ngay_su_dung, rr.gio_ket_thuc, r.ten AS room_name
+             FROM yeu_cau_dat_phong rr
+             JOIN phong r ON r.ma = rr.ma_phong
+             WHERE rr.ma = :id
+             FOR UPDATE'
         );
         $request->execute(['id' => $roomRequestId]);
         $room = $request->fetch();
@@ -1335,7 +1335,7 @@ function mark_room_completed(PDO $pdo, int $roomRequestId): array
         if ($room['status'] !== 'approved') {
             throw new ApiException('Chi lich dat phong da duoc duyet moi co the ket thuc.');
         }
-        $update = $pdo->prepare("UPDATE room_requests SET status = 'completed' WHERE id = :id");
+        $update = $pdo->prepare('UPDATE yeu_cau_dat_phong SET trang_thai = \'completed\' WHERE ma = :id');
         $update->execute(['id' => $roomRequestId]);
         $pdo->commit();
         return [
@@ -1361,16 +1361,16 @@ function mark_book_return(PDO $pdo, int $loanDetailId): array
     $pdo->beginTransaction();
     try {
         $detail = $pdo->prepare(
-            "SELECT ld.id, ld.receipt_id, ld.copy_id, ld.borrow_date, ld.due_date, ld.return_date,
-                    b.title, c.barcode, s.student_code, a.full_name AS student_name
-             FROM loan_details ld
-             JOIN loan_receipts lr ON lr.id = ld.receipt_id
-             JOIN students s ON s.id = lr.student_id
-             JOIN accounts a ON a.id = s.account_id
-             JOIN book_copies c ON c.id = ld.copy_id
-             JOIN books b ON b.id = c.book_id
-             WHERE ld.id = :id
-             FOR UPDATE"
+            'SELECT ld.ma, ld.ma_phieu_muon_sach, ld.ma_ban_sach, ld.ngay_muon, ld.han_tra, ld.ngay_tra,
+                    b.ten_sach, c.ma_vach, s.ma_sinh_vien, a.ho_ten AS student_name
+             FROM chi_tiet_muon_sach ld
+             JOIN phieu_muon_sach lr ON lr.ma = ld.ma_phieu_muon_sach
+             JOIN sinh_vien s ON s.ma = lr.ma_ho_so_sinh_vien
+             JOIN tai_khoan a ON a.ma = s.ma_tai_khoan
+             JOIN ban_sach c ON c.ma = ld.ma_ban_sach
+             JOIN dau_sach b ON b.ma = c.ma_dau_sach
+             WHERE ld.ma = :id
+             FOR UPDATE'
         );
         $detail->execute(['id' => $loanDetailId]);
         $loan = $detail->fetch();
@@ -1388,10 +1388,10 @@ function mark_book_return(PDO $pdo, int $loanDetailId): array
         $returnStatus=$lateDays>0?'late':'on_time';
 
         $update = $pdo->prepare(
-            "UPDATE loan_details
-             SET return_date = :return_date, return_status = :return_status, late_days = :late_days,
-                 status = 'returned', condition_on_return = :condition
-             WHERE id = :id"
+            'UPDATE chi_tiet_muon_sach
+             SET ngay_tra = :return_date, ket_qua_tra = :return_status, so_ngay_tre = :late_days,
+                 trang_thai = \'returned\', tinh_trang_khi_tra = :condition
+             WHERE ma = :id'
         );
         $update->execute([
             'return_date' => $returnDate,
@@ -1402,15 +1402,15 @@ function mark_book_return(PDO $pdo, int $loanDetailId): array
         ]);
 
         $copyStatus = $condition === 'lost' ? 'lost' : ($condition === 'damaged' ? 'damaged' : 'available');
-        $copy = $pdo->prepare('UPDATE book_copies SET status = :status WHERE id = :id');
+        $copy = $pdo->prepare('UPDATE ban_sach SET trang_thai = :status WHERE ma = :id');
         $copy->execute(['status' => $copyStatus, 'id' => $loan['copy_id']]);
 
         $receipt = $pdo->prepare(
-            "UPDATE loan_receipts
-             SET status = CASE WHEN NOT EXISTS (
-                 SELECT 1 FROM loan_details ld WHERE ld.receipt_id = loan_receipts.id AND ld.return_date IS NULL
-             ) THEN 'completed' ELSE 'open' END
-             WHERE id = :id"
+            'UPDATE phieu_muon_sach
+             SET trang_thai = CASE WHEN NOT EXISTS (
+                 SELECT 1 FROM chi_tiet_muon_sach ld WHERE ld.ma_phieu_muon_sach = phieu_muon_sach.ma AND ld.ngay_tra IS NULL
+             ) THEN \'completed\' ELSE \'open\' END
+             WHERE ma = :id'
         );
         $receipt->execute(['id' => $loan['receipt_id']]);
         $pdo->commit();
@@ -1441,15 +1441,15 @@ function mark_equipment_return(PDO $pdo, int $equipmentDetailId): array
     $pdo->beginTransaction();
     try {
         $detail = $pdo->prepare(
-            "SELECT eld.id, eld.loan_id, eld.equipment_id, eld.quantity, eld.borrow_date, eld.due_date, eld.return_date,
-                    e.name, s.student_code, a.full_name AS student_name
-             FROM equipment_loan_details eld
-             JOIN equipment_loans el ON el.id = eld.loan_id
-             JOIN equipment e ON e.id = eld.equipment_id
-             JOIN students s ON s.id = el.student_id
-             JOIN accounts a ON a.id = s.account_id
-             WHERE eld.id = :id
-             FOR UPDATE"
+            'SELECT eld.ma, eld.ma_phieu_muon_thiet_bi, eld.ma_thiet_bi, eld.so_luong, eld.ngay_muon, eld.han_tra, eld.ngay_tra,
+                    e.ten, s.ma_sinh_vien, a.ho_ten AS student_name
+             FROM chi_tiet_muon_thiet_bi eld
+             JOIN phieu_muon_thiet_bi el ON el.ma = eld.ma_phieu_muon_thiet_bi
+             JOIN thiet_bi e ON e.ma = eld.ma_thiet_bi
+             JOIN sinh_vien s ON s.ma = el.ma_ho_so_sinh_vien
+             JOIN tai_khoan a ON a.ma = s.ma_tai_khoan
+             WHERE eld.ma = :id
+             FOR UPDATE'
         );
         $detail->execute(['id' => $equipmentDetailId]);
         $loan = $detail->fetch();
@@ -1467,10 +1467,10 @@ function mark_equipment_return(PDO $pdo, int $equipmentDetailId): array
         $returnStatus=$lateDays>0?'late':'on_time';
 
         $update = $pdo->prepare(
-            "UPDATE equipment_loan_details
-             SET return_date = :return_date, return_status = :return_status, late_days = :late_days,
-                 status = 'returned', condition_on_return = :condition
-             WHERE id = :id"
+            'UPDATE chi_tiet_muon_thiet_bi
+             SET ngay_tra = :return_date, ket_qua_tra = :return_status, so_ngay_tre = :late_days,
+                 trang_thai = \'returned\', tinh_trang_khi_tra = :condition
+             WHERE ma = :id'
         );
         $update->execute([
             'return_date' => $returnDate,
@@ -1481,19 +1481,19 @@ function mark_equipment_return(PDO $pdo, int $equipmentDetailId): array
         ]);
 
         $equipment = $pdo->prepare(
-            "UPDATE equipment
-             SET available_quantity = LEAST(total_quantity, available_quantity + :quantity),
-                 status = CASE WHEN status IN ('maintenance','damaged') THEN status ELSE 'available' END
-             WHERE id = :id"
+            'UPDATE thiet_bi
+             SET so_luong_san_sang = LEAST(tong_so_luong, so_luong_san_sang + :quantity),
+                 trang_thai = CASE WHEN trang_thai IN (\'maintenance\',\'damaged\') THEN trang_thai ELSE \'available\' END
+             WHERE ma = :id'
         );
         $equipment->execute(['quantity' => $loan['quantity'], 'id' => $loan['equipment_id']]);
 
         $parent = $pdo->prepare(
-            "UPDATE equipment_loans
-             SET status = CASE WHEN NOT EXISTS (
-                 SELECT 1 FROM equipment_loan_details eld WHERE eld.loan_id = equipment_loans.id AND eld.return_date IS NULL
-             ) THEN 'returned' ELSE 'borrowed' END
-             WHERE id = :id"
+            'UPDATE phieu_muon_thiet_bi
+             SET trang_thai = CASE WHEN NOT EXISTS (
+                 SELECT 1 FROM chi_tiet_muon_thiet_bi eld WHERE eld.ma_phieu_muon_thiet_bi = phieu_muon_thiet_bi.ma AND eld.ngay_tra IS NULL
+             ) THEN \'returned\' ELSE \'borrowed\' END
+             WHERE ma = :id'
         );
         $parent->execute(['id' => $loan['loan_id']]);
         $pdo->commit();
@@ -1520,9 +1520,9 @@ function student_history(PDO $pdo, string $studentCode): array
     $user=require_login();
     if ($user['role']==='student' && $studentCode !== $user['student_code']) throw new ApiException('Bạn chỉ được xem lịch sử của mình.',403);
     $student = $pdo->prepare(
-        "SELECT s.id, s.student_code, a.full_name, s.faculty, s.class_name
-         FROM students s JOIN accounts a ON a.id = s.account_id
-         WHERE s.student_code = :code"
+        'SELECT s.ma, s.ma_sinh_vien, a.ho_ten, s.khoa, s.lop
+         FROM sinh_vien s JOIN tai_khoan a ON a.ma = s.ma_tai_khoan
+         WHERE s.ma_sinh_vien = :code'
     );
     $student->execute(['code' => $studentCode]);
     $studentData = $student->fetch();
@@ -1531,37 +1531,37 @@ function student_history(PDO $pdo, string $studentCode): array
     }
 
     $books = $pdo->prepare(
-        "SELECT 'book' AS resource_type, lr.id AS receipt_id, ld.id AS loan_detail_id, b.title AS resource_name,
-                ld.borrow_date, ld.due_date, ld.return_date, ld.extension_count,
-                CASE WHEN ld.return_date IS NULL AND ld.due_date < CURDATE() THEN 'Qua han'
-                     WHEN ld.return_date IS NULL THEN 'Dang muon'
-                     WHEN ld.return_status = 'late' THEN CONCAT('Tra tre ', ld.late_days, ' ngay')
-                     WHEN ld.return_status = 'on_time' THEN 'Tra dung han'
-                     WHEN ld.return_date > ld.due_date THEN CONCAT('Tra tre ', DATEDIFF(ld.return_date, ld.due_date), ' ngay')
-                     ELSE 'Tra dung han' END AS status
-         FROM loan_receipts lr
-         JOIN loan_details ld ON ld.receipt_id = lr.id
-         JOIN book_copies c ON c.id = ld.copy_id
-         JOIN books b ON b.id = c.book_id
-         WHERE lr.student_id = :student_id
-         ORDER BY ld.borrow_date DESC"
+        'SELECT \'book\' AS resource_type, lr.ma AS ma_phieu_muon_sach, ld.ma AS ma_chi_tiet_muon_sach, b.ten_sach AS resource_name,
+                ld.ngay_muon, ld.han_tra, ld.ngay_tra, ld.so_lan_gia_han,
+                CASE WHEN ld.ngay_tra IS NULL AND ld.han_tra < CURDATE() THEN \'Qua han\'
+                     WHEN ld.ngay_tra IS NULL THEN \'Dang muon\'
+                     WHEN ld.ket_qua_tra = \'late\' THEN CONCAT(\'Tra tre \', ld.so_ngay_tre, \' ngay\')
+                     WHEN ld.ket_qua_tra = \'on_time\' THEN \'Tra dung han\'
+                     WHEN ld.ngay_tra > ld.han_tra THEN CONCAT(\'Tra tre \', DATEDIFF(ld.ngay_tra, ld.han_tra), \' ngay\')
+                     ELSE \'Tra dung han\' END AS trang_thai
+         FROM phieu_muon_sach lr
+         JOIN chi_tiet_muon_sach ld ON ld.ma_phieu_muon_sach = lr.ma
+         JOIN ban_sach c ON c.ma = ld.ma_ban_sach
+         JOIN dau_sach b ON b.ma = c.ma_dau_sach
+         WHERE lr.ma_ho_so_sinh_vien = :student_id
+         ORDER BY ld.ngay_muon DESC'
     );
     $books->execute(['student_id' => $studentData['id']]);
 
     $equipment = $pdo->prepare(
-        "SELECT 'equipment' AS resource_type, el.id AS receipt_id, eld.id AS equipment_detail_id, e.name AS resource_name,
-                eld.borrow_date, eld.due_date, eld.return_date, eld.quantity,
-                CASE WHEN eld.return_date IS NULL AND eld.due_date < CURDATE() THEN 'Qua han'
-                     WHEN eld.return_date IS NULL THEN 'Dang muon'
-                     WHEN eld.return_status = 'late' THEN CONCAT('Tra tre ', eld.late_days, ' ngay')
-                     WHEN eld.return_status = 'on_time' THEN 'Tra dung han'
-                     WHEN eld.return_date > eld.due_date THEN CONCAT('Tra tre ', DATEDIFF(eld.return_date, eld.due_date), ' ngay')
-                     ELSE 'Tra dung han' END AS status
-         FROM equipment_loans el
-         JOIN equipment_loan_details eld ON eld.loan_id = el.id
-         JOIN equipment e ON e.id = eld.equipment_id
-         WHERE el.student_id = :student_id
-         ORDER BY eld.borrow_date DESC"
+        'SELECT \'equipment\' AS resource_type, el.ma AS ma_phieu_muon_sach, eld.ma AS ma_chi_tiet_muon_thiet_bi, e.ten AS resource_name,
+                eld.ngay_muon, eld.han_tra, eld.ngay_tra, eld.so_luong,
+                CASE WHEN eld.ngay_tra IS NULL AND eld.han_tra < CURDATE() THEN \'Qua han\'
+                     WHEN eld.ngay_tra IS NULL THEN \'Dang muon\'
+                     WHEN eld.ket_qua_tra = \'late\' THEN CONCAT(\'Tra tre \', eld.so_ngay_tre, \' ngay\')
+                     WHEN eld.ket_qua_tra = \'on_time\' THEN \'Tra dung han\'
+                     WHEN eld.ngay_tra > eld.han_tra THEN CONCAT(\'Tra tre \', DATEDIFF(eld.ngay_tra, eld.han_tra), \' ngay\')
+                     ELSE \'Tra dung han\' END AS trang_thai
+         FROM phieu_muon_thiet_bi el
+         JOIN chi_tiet_muon_thiet_bi eld ON eld.ma_phieu_muon_thiet_bi = el.ma
+         JOIN thiet_bi e ON e.ma = eld.ma_thiet_bi
+         WHERE el.ma_ho_so_sinh_vien = :student_id
+         ORDER BY eld.ngay_muon DESC'
     );
     $equipment->execute(['student_id' => $studentData['id']]);
 
@@ -1574,15 +1574,15 @@ function student_history(PDO $pdo, string $studentCode): array
 function loan_receipt_detail(PDO $pdo, int $receiptId): array
 {
     $receipt = $pdo->prepare(
-        "SELECT lr.id, lr.request_id, lr.registered_at, lr.status, lr.note,
-                s.student_code, sa.full_name AS student_name,
-                l.librarian_code, la.full_name AS librarian_name
-         FROM loan_receipts lr
-         JOIN students s ON s.id = lr.student_id
-         JOIN accounts sa ON sa.id = s.account_id
-         JOIN librarians l ON l.id = lr.librarian_id
-         JOIN accounts la ON la.id = l.account_id
-         WHERE lr.id = :id"
+        'SELECT lr.ma, lr.ma_yeu_cau, lr.thoi_diem_dang_ky, lr.trang_thai, lr.ghi_chu,
+                s.ma_sinh_vien, sa.ho_ten AS student_name,
+                l.ma_thu_thu, la.ho_ten AS librarian_name
+         FROM phieu_muon_sach lr
+         JOIN sinh_vien s ON s.ma = lr.ma_ho_so_sinh_vien
+         JOIN tai_khoan sa ON sa.ma = s.ma_tai_khoan
+         JOIN thu_thu l ON l.ma = lr.ma_ho_so_thu_thu
+         JOIN tai_khoan la ON la.ma = l.ma_tai_khoan
+         WHERE lr.ma = :id'
     );
     $receipt->execute(['id' => $receiptId]);
     $data = $receipt->fetch();
@@ -1594,13 +1594,13 @@ function loan_receipt_detail(PDO $pdo, int $receiptId): array
     if ($user['role']==='student' && $data['student_code'] !== $user['student_code']) throw new ApiException('Bạn không có quyền xem phiếu mượn này.',403);
 
     $details = $pdo->prepare(
-        "SELECT ld.id, 1 AS quantity, b.title, c.barcode, ld.borrow_date, ld.due_date,
-                ld.return_date, ld.return_status, ld.late_days,
-                ld.extension_count, ld.status
-         FROM loan_details ld
-         JOIN book_copies c ON c.id = ld.copy_id
-         JOIN books b ON b.id = c.book_id
-         WHERE ld.receipt_id = :id ORDER BY ld.id"
+        'SELECT ld.ma, 1 AS so_luong, b.ten_sach, c.ma_vach, ld.ngay_muon, ld.han_tra,
+                ld.ngay_tra, ld.ket_qua_tra, ld.so_ngay_tre,
+                ld.so_lan_gia_han, ld.trang_thai
+         FROM chi_tiet_muon_sach ld
+         JOIN ban_sach c ON c.ma = ld.ma_ban_sach
+         JOIN dau_sach b ON b.ma = c.ma_dau_sach
+         WHERE ld.ma_phieu_muon_sach = :id ORDER BY ld.ma'
     );
     $details->execute(['id' => $receiptId]);
     $data['details'] = $details->fetchAll();
@@ -1622,12 +1622,12 @@ function available_rooms(PDO $pdo): array
     $where = [
         "r.status = 'available'",
         'r.is_visible = 1', 'r.deleted_at IS NULL',
-        "NOT EXISTS (
-            SELECT 1 FROM room_requests rr
-            WHERE rr.room_id = r.id AND rr.use_date = :date
-              AND rr.status IN ('pending', 'approved')
-              AND rr.start_time < :end AND rr.end_time > :start
-        )",
+        'NOT EXISTS (
+            SELECT 1 FROM yeu_cau_dat_phong rr
+            WHERE rr.ma_phong = r.ma AND rr.ngay_su_dung = :date
+              AND rr.trang_thai IN (\'pending\', \'approved\')
+              AND rr.gio_bat_dau < :end AND rr.gio_ket_thuc > :start
+        )',
     ];
 
     if ($type) {
@@ -1640,9 +1640,9 @@ function available_rooms(PDO $pdo): array
     }
 
     $statement = $pdo->prepare(
-        'SELECT r.id, r.name, r.room_type, r.location, r.capacity, r.included_equipment,
-                r.operating_hours, r.status, r.image_path, r.image_is_illustration
-         FROM rooms r WHERE ' . implode(' AND ', $where) . ' ORDER BY r.capacity'
+        'SELECT r.ma, r.ten, r.loai_phong, r.vi_tri, r.suc_chua, r.thiet_bi_di_kem,
+                r.gio_hoat_dong, r.trang_thai, r.duong_dan_anh, r.anh_minh_hoa
+         FROM phong r WHERE ' . implode(' AND ', $where) . ' ORDER BY r.suc_chua'
     );
     bind_optional($statement, $params);
     $statement->execute();
@@ -1653,24 +1653,24 @@ function room_schedule(PDO $pdo, ?int $roomId = null): array
 {
     $date = normalize_date(query_string('date', date('Y-m-d')) ?? date('Y-m-d'), date('Y-m-d'));
     $params = [':date' => $date];
-    $roomFilter = resource_staff_access()?'':' AND r.is_visible=1 AND r.deleted_at IS NULL';
+    $roomFilter = resource_staff_access()?'':' AND r.hien_thi=1 AND r.thoi_diem_xoa IS NULL';
     if ($roomId !== null) {
-        $roomFilter .= ' AND rr.room_id = :room_id';
+        $roomFilter .= ' AND rr.ma_phong = :room_id';
         $params[':room_id'] = $roomId;
     }
 
     $statement = $pdo->prepare(
-        "SELECT rr.id AS room_request_id, r.id AS room_id, r.name AS room_name,
-                r.room_type, rr.use_date, rr.start_time, rr.end_time, rr.purpose,
-                rr.status, s.student_code, a.full_name AS student_name
-         FROM room_requests rr
-         JOIN rooms r ON r.id = rr.room_id
-         JOIN students s ON s.id = rr.student_id
-         JOIN accounts a ON a.id = s.account_id
-         WHERE rr.use_date = :date
-           AND rr.status IN ('pending', 'approved', 'completed')
+        "SELECT rr.ma AS ma_yeu_cau_dat_phong, r.ma AS ma_phong, r.ten AS room_name,
+                r.loai_phong, rr.ngay_su_dung, rr.gio_bat_dau, rr.gio_ket_thuc, rr.muc_dich,
+                rr.trang_thai, s.ma_sinh_vien, a.ho_ten AS student_name
+         FROM yeu_cau_dat_phong rr
+         JOIN phong r ON r.ma = rr.ma_phong
+         JOIN sinh_vien s ON s.ma = rr.ma_ho_so_sinh_vien
+         JOIN tai_khoan a ON a.ma = s.ma_tai_khoan
+         WHERE rr.ngay_su_dung = :date
+           AND rr.trang_thai IN ('pending', 'approved', 'completed')
            $roomFilter
-         ORDER BY r.name, rr.start_time, rr.end_time"
+         ORDER BY r.ten, rr.gio_bat_dau, rr.gio_ket_thuc"
     );
     $statement->execute($params);
     $rows=$statement->fetchAll();
@@ -1695,7 +1695,7 @@ function room_requests(PDO $pdo, int $limit = 50): array
     $where = '';
     $user=require_login();
     if ($status) {
-        $where = 'WHERE rr.status = :status';
+        $where = 'WHERE rr.trang_thai = :status';
         $params[':status'] = $status;
     }
 
@@ -1704,15 +1704,15 @@ function room_requests(PDO $pdo, int $limit = 50): array
         $params[':own_student']=(int)$user['student_id'];
     }
     $statement = $pdo->prepare(
-        "SELECT rr.id, rr.use_date, rr.start_time, rr.end_time, rr.purpose, rr.status,
-                r.name AS room_name, r.room_type, r.capacity,
-                s.student_code, a.full_name AS student_name
-         FROM room_requests rr
-         JOIN rooms r ON r.id = rr.room_id
-         JOIN students s ON s.id = rr.student_id
-         JOIN accounts a ON a.id = s.account_id
+        "SELECT rr.ma, rr.ngay_su_dung, rr.gio_bat_dau, rr.gio_ket_thuc, rr.muc_dich, rr.trang_thai,
+                r.ten AS room_name, r.loai_phong, r.suc_chua,
+                s.ma_sinh_vien, a.ho_ten AS student_name
+         FROM yeu_cau_dat_phong rr
+         JOIN phong r ON r.ma = rr.ma_phong
+         JOIN sinh_vien s ON s.ma = rr.ma_ho_so_sinh_vien
+         JOIN tai_khoan a ON a.ma = s.ma_tai_khoan
          $where
-         ORDER BY rr.use_date ASC, rr.start_time ASC
+         ORDER BY rr.ngay_su_dung ASC, rr.gio_bat_dau ASC
          LIMIT :limit"
     );
     bind_optional($statement, $params);
@@ -1732,9 +1732,9 @@ function available_equipment(PDO $pdo): array
     }
 
     $statement = $pdo->prepare(
-        'SELECT e.id, e.name, e.equipment_type, e.manufacturer, e.total_quantity,
-                e.available_quantity, e.storage_location, e.serial_number, e.status, e.image_path, e.image_is_illustration
-         FROM equipment e WHERE ' . implode(' AND ', $where) . ' ORDER BY e.available_quantity DESC, e.name'
+        'SELECT e.ma, e.ten, e.loai_thiet_bi, e.hang_san_xuat, e.tong_so_luong,
+                e.so_luong_san_sang, e.vi_tri_luu_tru, e.so_se_ri, e.trang_thai, e.duong_dan_anh, e.anh_minh_hoa
+         FROM thiet_bi e WHERE ' . implode(' AND ', $where) . ' ORDER BY e.so_luong_san_sang DESC, e.ten'
     );
     bind_optional($statement, $params);
     $statement->execute();
@@ -1744,16 +1744,16 @@ function available_equipment(PDO $pdo): array
 function overdue_equipment(PDO $pdo): array
 {
     $statement = $pdo->query(
-        "SELECT eld.id, e.name, e.equipment_type, eld.quantity, eld.borrow_date,
-                eld.due_date, DATEDIFF(CURDATE(), eld.due_date) AS overdue_days,
-                s.student_code, a.full_name AS student_name, el.id AS loan_id
-         FROM equipment_loan_details eld
-         JOIN equipment_loans el ON el.id = eld.loan_id
-         JOIN equipment e ON e.id = eld.equipment_id
-         JOIN students s ON s.id = el.student_id
-         JOIN accounts a ON a.id = s.account_id
-         WHERE eld.return_date IS NULL AND eld.due_date < CURDATE()
-         ORDER BY overdue_days DESC"
+        'SELECT eld.ma, e.ten, e.loai_thiet_bi, eld.so_luong, eld.ngay_muon,
+                eld.han_tra, DATEDIFF(CURDATE(), eld.han_tra) AS overdue_days,
+                s.ma_sinh_vien, a.ho_ten AS student_name, el.ma AS ma_phieu_muon_thiet_bi
+         FROM chi_tiet_muon_thiet_bi eld
+         JOIN phieu_muon_thiet_bi el ON el.ma = eld.ma_phieu_muon_thiet_bi
+         JOIN thiet_bi e ON e.ma = eld.ma_thiet_bi
+         JOIN sinh_vien s ON s.ma = el.ma_ho_so_sinh_vien
+         JOIN tai_khoan a ON a.ma = s.ma_tai_khoan
+         WHERE eld.ngay_tra IS NULL AND eld.han_tra < CURDATE()
+         ORDER BY overdue_days DESC'
     );
     return $statement->fetchAll();
 }
@@ -1761,22 +1761,22 @@ function overdue_equipment(PDO $pdo): array
 function returned_equipment(PDO $pdo): array
 {
     $statement = $pdo->query(
-        "SELECT eld.id AS equipment_detail_id, e.name, eld.quantity,
-                s.student_code, a.full_name AS student_name, eld.borrow_date,
-                eld.due_date, eld.return_date,
-                CASE WHEN eld.return_status = 'late' THEN 'Tra tre'
-                     WHEN eld.return_status = 'on_time' THEN 'Tra dung han'
-                     WHEN eld.return_date > eld.due_date THEN 'Tra tre' ELSE 'Tra dung han' END AS return_status,
-                CASE WHEN eld.return_status IS NOT NULL THEN eld.late_days
-                     ELSE GREATEST(DATEDIFF(eld.return_date, eld.due_date), 0) END AS late_days
-         FROM equipment_loan_details eld
-         JOIN equipment_loans el ON el.id = eld.loan_id
-         JOIN equipment e ON e.id = eld.equipment_id
-         JOIN students s ON s.id = el.student_id
-         JOIN accounts a ON a.id = s.account_id
-         WHERE eld.return_date IS NOT NULL
-         ORDER BY eld.return_date DESC
-         LIMIT 20"
+        'SELECT eld.ma AS ma_chi_tiet_muon_thiet_bi, e.ten, eld.so_luong,
+                s.ma_sinh_vien, a.ho_ten AS student_name, eld.ngay_muon,
+                eld.han_tra, eld.ngay_tra,
+                CASE WHEN eld.ket_qua_tra = \'late\' THEN \'Tra tre\'
+                     WHEN eld.ket_qua_tra = \'on_time\' THEN \'Tra dung han\'
+                     WHEN eld.ngay_tra > eld.han_tra THEN \'Tra tre\' ELSE \'Tra dung han\' END AS ket_qua_tra,
+                CASE WHEN eld.ket_qua_tra IS NOT NULL THEN eld.so_ngay_tre
+                     ELSE GREATEST(DATEDIFF(eld.ngay_tra, eld.han_tra), 0) END AS so_ngay_tre
+         FROM chi_tiet_muon_thiet_bi eld
+         JOIN phieu_muon_thiet_bi el ON el.ma = eld.ma_phieu_muon_thiet_bi
+         JOIN thiet_bi e ON e.ma = eld.ma_thiet_bi
+         JOIN sinh_vien s ON s.ma = el.ma_ho_so_sinh_vien
+         JOIN tai_khoan a ON a.ma = s.ma_tai_khoan
+         WHERE eld.ngay_tra IS NOT NULL
+         ORDER BY eld.ngay_tra DESC
+         LIMIT 20'
     );
     return $statement->fetchAll();
 }
@@ -1784,25 +1784,25 @@ function returned_equipment(PDO $pdo): array
 function overdue_students(PDO $pdo): array
 {
     $statement = $pdo->query(
-        "SELECT s.student_code, a.full_name,
+        'SELECT s.ma_sinh_vien, a.ho_ten,
                 COALESCE(book_counts.book_overdue, 0) AS overdue_books,
                 COALESCE(equipment_counts.equipment_overdue, 0) AS overdue_equipment
-         FROM students s
-         JOIN accounts a ON a.id = s.account_id
+         FROM sinh_vien s
+         JOIN tai_khoan a ON a.ma = s.ma_tai_khoan
          LEFT JOIN (
-             SELECT lr.student_id, COUNT(*) AS book_overdue
-             FROM loan_receipts lr JOIN loan_details ld ON ld.receipt_id = lr.id
-             WHERE ld.return_date IS NULL AND ld.due_date < CURDATE()
-             GROUP BY lr.student_id
-         ) book_counts ON book_counts.student_id = s.id
+             SELECT lr.ma_ho_so_sinh_vien, COUNT(*) AS book_overdue
+             FROM phieu_muon_sach lr JOIN chi_tiet_muon_sach ld ON ld.ma_phieu_muon_sach = lr.ma
+             WHERE ld.ngay_tra IS NULL AND ld.han_tra < CURDATE()
+             GROUP BY lr.ma_ho_so_sinh_vien
+         ) book_counts ON book_counts.ma_ho_so_sinh_vien = s.ma
          LEFT JOIN (
-             SELECT el.student_id, COUNT(*) AS equipment_overdue
-             FROM equipment_loans el JOIN equipment_loan_details eld ON eld.loan_id = el.id
-             WHERE eld.return_date IS NULL AND eld.due_date < CURDATE()
-             GROUP BY el.student_id
-         ) equipment_counts ON equipment_counts.student_id = s.id
+             SELECT el.ma_ho_so_sinh_vien, COUNT(*) AS equipment_overdue
+             FROM phieu_muon_thiet_bi el JOIN chi_tiet_muon_thiet_bi eld ON eld.ma_phieu_muon_thiet_bi = el.ma
+             WHERE eld.ngay_tra IS NULL AND eld.han_tra < CURDATE()
+             GROUP BY el.ma_ho_so_sinh_vien
+         ) equipment_counts ON equipment_counts.ma_ho_so_sinh_vien = s.ma
          WHERE book_counts.book_overdue IS NOT NULL OR equipment_counts.equipment_overdue IS NOT NULL
-         ORDER BY overdue_books DESC, overdue_equipment DESC"
+         ORDER BY overdue_books DESC, overdue_equipment DESC'
     );
     return $statement->fetchAll();
 }
@@ -1810,13 +1810,13 @@ function overdue_students(PDO $pdo): array
 function accounts_list(PDO $pdo): array
 {
     $statement = $pdo->query(
-        "SELECT a.id, a.username, a.full_name, a.email, a.role,
-                a.registered_at, s.student_code, s.faculty, s.class_name,
-                l.librarian_code
-         FROM accounts a
-         LEFT JOIN students s ON s.account_id = a.id
-         LEFT JOIN librarians l ON l.account_id = a.id
-         ORDER BY FIELD(a.role, 'admin', 'librarian', 'student'), a.full_name"
+        'SELECT a.ma, a.ten_dang_nhap, a.ho_ten, a.thu_dien_tu, a.vai_tro,
+                a.thoi_diem_dang_ky, s.ma_sinh_vien, s.khoa, s.lop,
+                l.ma_thu_thu
+         FROM tai_khoan a
+         LEFT JOIN sinh_vien s ON s.ma_tai_khoan = a.ma
+         LEFT JOIN thu_thu l ON l.ma_tai_khoan = a.ma
+         ORDER BY FIELD(a.vai_tro, \'admin\', \'librarian\', \'student\'), a.ho_ten'
     );
     return $statement->fetchAll();
 }
@@ -1830,11 +1830,11 @@ function top_rooms(PDO $pdo, int $limit = 10): array
 {
     $limit = max(1, min($limit, 100));
     $statement = $pdo->prepare(
-        "SELECT r.id, r.name, r.room_type, r.capacity, COUNT(rr.id) AS booking_count
-         FROM rooms r LEFT JOIN room_requests rr ON rr.room_id = r.id AND rr.status IN ('approved', 'completed')
-         GROUP BY r.id, r.name, r.room_type, r.capacity
-         ORDER BY booking_count DESC, r.name
-         LIMIT :limit"
+        'SELECT r.ma, r.ten, r.loai_phong, r.suc_chua, COUNT(rr.ma) AS booking_count
+         FROM phong r LEFT JOIN yeu_cau_dat_phong rr ON rr.ma_phong = r.ma AND rr.trang_thai IN (\'approved\', \'completed\')
+         GROUP BY r.ma, r.ten, r.loai_phong, r.suc_chua
+         ORDER BY booking_count DESC, r.ten
+         LIMIT :limit'
     );
     $statement->bindValue('limit', $limit, PDO::PARAM_INT);
     $statement->execute();
@@ -1845,11 +1845,11 @@ function top_equipment(PDO $pdo, int $limit = 10): array
 {
     $limit = max(1, min($limit, 100));
     $statement = $pdo->prepare(
-        "SELECT e.id, e.name, e.equipment_type, COALESCE(SUM(eld.quantity), 0) AS borrow_count
-         FROM equipment e LEFT JOIN equipment_loan_details eld ON eld.equipment_id = e.id
-         GROUP BY e.id, e.name, e.equipment_type
-         ORDER BY borrow_count DESC, e.name
-         LIMIT :limit"
+        'SELECT e.ma, e.ten, e.loai_thiet_bi, COALESCE(SUM(eld.so_luong), 0) AS borrow_count
+         FROM thiet_bi e LEFT JOIN chi_tiet_muon_thiet_bi eld ON eld.ma_thiet_bi = e.ma
+         GROUP BY e.ma, e.ten, e.loai_thiet_bi
+         ORDER BY borrow_count DESC, e.ten
+         LIMIT :limit'
     );
     $statement->bindValue('limit', $limit, PDO::PARAM_INT);
     $statement->execute();

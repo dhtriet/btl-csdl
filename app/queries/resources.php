@@ -5,36 +5,36 @@ function resource_dashboard_counts(PDO $pdo): array
 {
     $counts = $pdo->query(<<<'SQL'
         SELECT
-            (SELECT COUNT(*) FROM books WHERE deleted_at IS NULL) AS books,
+            (SELECT COUNT(*) FROM dau_sach WHERE thoi_diem_xoa IS NULL) AS dau_sach,
             (
                 SELECT COUNT(*)
-                FROM book_copies c
-                JOIN books b ON b.id = c.book_id
-                WHERE c.status = 'available'
-                  AND c.is_visible = 1
-                  AND c.deleted_at IS NULL
-                  AND b.is_visible = 1
-                  AND b.deleted_at IS NULL
+                FROM ban_sach c
+                JOIN dau_sach b ON b.ma = c.ma_dau_sach
+                WHERE c.trang_thai = 'available'
+                  AND c.hien_thi = 1
+                  AND c.thoi_diem_xoa IS NULL
+                  AND b.hien_thi = 1
+                  AND b.thoi_diem_xoa IS NULL
             ) AS available_copies,
             (
                 SELECT COUNT(*)
-                FROM loan_details
-                WHERE return_date IS NULL
-                  AND due_date < CURDATE()
+                FROM chi_tiet_muon_sach
+                WHERE ngay_tra IS NULL
+                  AND han_tra < CURDATE()
             ) AS overdue_books,
             (
-                SELECT COALESCE(SUM(available_quantity), 0)
-                FROM equipment
-                WHERE status = 'available'
-                  AND is_visible = 1
-                  AND deleted_at IS NULL
+                SELECT COALESCE(SUM(so_luong_san_sang), 0)
+                FROM thiet_bi
+                WHERE trang_thai = 'available'
+                  AND hien_thi = 1
+                  AND thoi_diem_xoa IS NULL
             ) AS available_equipment,
             (
-                (SELECT COUNT(*) FROM book_loan_requests WHERE status = 'pending')
-                + (SELECT COUNT(*) FROM equipment_loan_requests WHERE status = 'pending')
-                + (SELECT COUNT(*) FROM room_requests WHERE status = 'pending')
+                (SELECT COUNT(*) FROM yeu_cau_muon_sach WHERE trang_thai = 'pending')
+                + (SELECT COUNT(*) FROM yeu_cau_muon_thiet_bi WHERE trang_thai = 'pending')
+                + (SELECT COUNT(*) FROM yeu_cau_dat_phong WHERE trang_thai = 'pending')
             ) AS pending_requests,
-            (SELECT COUNT(*) FROM students) AS students
+            (SELECT COUNT(*) FROM sinh_vien) AS sinh_vien
         SQL)->fetch();
 
     return array_map(static fn($value): int => (int) $value, $counts);
@@ -60,7 +60,7 @@ function managed_resource_list(
     $extraColumns = '';
 
     if ($type === 'copies') {
-        $join = 'JOIN books b ON b.id = r.book_id';
+        $join = 'JOIN dau_sach b ON b.ma = r.ma_dau_sach';
         $extraColumns = ', b.title AS book_title, b.cover_image, b.is_visible AS book_visible';
         $conditions[] = 'b.deleted_at IS NULL';
     }
@@ -85,7 +85,7 @@ function managed_resource_list(
     $statement = $pdo->prepare(<<<SQL
         SELECT r.* $extraColumns
         $from
-        ORDER BY r.id DESC
+        ORDER BY r.ma DESC
         LIMIT :limit OFFSET :offset
         SQL);
     foreach ($parameters as $name => $value) {
@@ -109,54 +109,54 @@ function resource_has_open_transactions(PDO $pdo, string $type, int $id): bool
         'books' => [
             <<<'SQL'
                 SELECT 1
-                FROM loan_details ld
-                JOIN book_copies c ON c.id = ld.copy_id
-                WHERE c.book_id = :id
-                  AND ld.return_date IS NULL
+                FROM chi_tiet_muon_sach ld
+                JOIN ban_sach c ON c.ma = ld.ma_ban_sach
+                WHERE c.ma_dau_sach = :id
+                  AND ld.ngay_tra IS NULL
                 LIMIT 1
                 SQL,
             <<<'SQL'
                 SELECT 1
-                FROM book_loan_request_items i
-                JOIN book_loan_requests r ON r.id = i.request_id
-                WHERE i.book_id = :id
-                  AND r.status = 'pending'
+                FROM chi_tiet_yeu_cau_muon_sach i
+                JOIN yeu_cau_muon_sach r ON r.ma = i.ma_yeu_cau
+                WHERE i.ma_dau_sach = :id
+                  AND r.trang_thai = 'pending'
                 LIMIT 1
                 SQL,
         ],
         'copies' => [
             <<<'SQL'
                 SELECT 1
-                FROM loan_details
-                WHERE copy_id = :id
-                  AND return_date IS NULL
+                FROM chi_tiet_muon_sach
+                WHERE ma_ban_sach = :id
+                  AND ngay_tra IS NULL
                 LIMIT 1
                 SQL,
         ],
         'rooms' => [
             <<<'SQL'
                 SELECT 1
-                FROM room_requests
-                WHERE room_id = :id
-                  AND status IN ('pending', 'approved')
-                  AND use_date >= CURDATE()
+                FROM yeu_cau_dat_phong
+                WHERE ma_phong = :id
+                  AND trang_thai IN ('pending', 'approved')
+                  AND ngay_su_dung >= CURDATE()
                 LIMIT 1
                 SQL,
         ],
         'equipment' => [
             <<<'SQL'
                 SELECT 1
-                FROM equipment_loan_details
-                WHERE equipment_id = :id
-                  AND return_date IS NULL
+                FROM chi_tiet_muon_thiet_bi
+                WHERE ma_thiet_bi = :id
+                  AND ngay_tra IS NULL
                 LIMIT 1
                 SQL,
             <<<'SQL'
                 SELECT 1
-                FROM equipment_loan_request_items i
-                JOIN equipment_loan_requests r ON r.id = i.request_id
-                WHERE i.equipment_id = :id
-                  AND r.status = 'pending'
+                FROM chi_tiet_yeu_cau_muon_thiet_bi i
+                JOIN yeu_cau_muon_thiet_bi r ON r.ma = i.ma_yeu_cau
+                WHERE i.ma_thiet_bi = :id
+                  AND r.trang_thai = 'pending'
                 LIMIT 1
                 SQL,
         ],

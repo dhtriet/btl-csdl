@@ -32,3 +32,7 @@ PDF riêng được phục hồi lúc container khởi động bằng `scripts/r
 ## Kiểm thử
 
 `tests/circulation.py` kiểm tra API và tranh chấp thiết bị cuối qua hai server độc lập. `tests/schema-circulation.php` kiểm tra khởi tạo, migration chạy lại và FK/UNIQUE/CHECK. `tests/circulation-ui.cjs` kiểm tra thứ tự phản hồi bất đồng bộ. Xem [hướng dẫn](../tests/README.md).
+
+## Việt hóa lược đồ
+
+Triển khai mã có `app/sql_names.php` và `database/vietnamese-identifiers.json` trước để đọc được lược đồ cũ. Chạy `php scripts/migrate-vietnamese-schema.php --apply` với cấu hình hosting sau khi backup; xác minh đủ 27 bảng tiếng Việt, các ràng buộc và API sau migration. Không chép dữ liệu localhost lên database hosting. Xem [ánh xạ và rollback](vietnamese-schema.md).

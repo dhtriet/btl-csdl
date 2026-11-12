@@ -1,5 +1,5 @@
 """Run against the isolated PHP test server on port 8016; never production."""
-import http.cookiejar,json,os,re,time,urllib.error,urllib.request
+import datetime,http.cookiejar,json,os,re,time,urllib.error,urllib.request
 assert re.fullmatch(r'resource_center_test_\d+',os.environ.get('NEXUS_DB_NAME','')), 'Isolated test database required'
 base='http://127.0.0.1:8016'
 checks=[]
@@ -27,7 +27,13 @@ for kind,row in [('copies',copy),('books',book),('rooms',room),('equipment',equi
     staff.call(path,'DELETE',{'version':'stale'},409)
     assert staff.call(path,'DELETE',{'version':version})['deleted']
     staff.call(path,expected=404)
-# A seeded book has an active loan. Permission to delete must not bypass this rule.
-path='/api/manage/books/1';version=staff.call(path)['version']
+# Create an active loan rather than depending on a particular seed row's history.
+active=staff.call('/api/manage/books','POST',{'title':'ACTIVE DELETE TEST '+stamp,'publisher_id':publisher,'language':'Tiếng Việt','authors':[],'genres':[],'keywords':[]},201)
+staff.call('/api/manage/copies','POST',{'book_id':active['id'],'barcode':'ACTIVEDEL'+stamp,'storage_location':'TEST','condition_status':'good','status':'available'},201)
+due=(datetime.date.today()+datetime.timedelta(days=7)).isoformat()
+loan=staff.call('/api/circulation/counter-loans','POST',{'type':'book','student_code':'SV001','items':[{'book_id':active['id'],'quantity':1,'requested_due_date':due}]},201)
+path=f'/api/manage/books/{active["id"]}';version=staff.call(path)['version']
 staff.call(path,'DELETE',{'version':version},409)
+trace=staff.call(f'/api/circulation/trace/book/{loan["id"]}')
+staff.call(f'/api/returns/books/{trace["details"][0]["id"]}','POST',{'late_days':0})
 print(json.dumps({'checks':len(checks),'four_types_deleted_by_librarian':True,'student_csrf_stale_blocked':True,'active_loan_protected':True}))

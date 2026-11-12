@@ -40,26 +40,26 @@ Bỏ nhóm lặp danh sách đầu sách, tác giả và bản sách khỏi mộ
 
 ### 2NF
 
-Trong quan hệ giả định có khóa ghép `(MaPhieu, MaBan)`, thông tin phiếu chỉ phụ thuộc `MaPhieu`, thông tin cuốn sách chỉ phụ thuộc `MaBan`. Tách thành `loan_receipts`, `loan_details`, `book_copies`. Với quan hệ nhiều tác giả, dùng khóa ghép `(book_id, author_id)` trong `book_authors`; không đưa tên tác giả vào bảng nối.
+Trong quan hệ giả định có khóa ghép `(MaPhieu, MaBan)`, thông tin phiếu chỉ phụ thuộc `MaPhieu`, thông tin cuốn sách chỉ phụ thuộc `MaBan`. Tách thành `phieu_muon_sach`, `chi_tiet_muon_sach`, `ban_sach`. Với quan hệ nhiều tác giả, dùng khóa ghép `(book_id, author_id)` trong `dau_sach_tac_gia`; không đưa tên tác giả vào bảng nối.
 
 ### 3NF
 
-Loại các phụ thuộc bắc cầu: thông tin sinh viên đi qua `student_id`, thông tin tài khoản đi qua `account_id`, nhà xuất bản đi qua `publisher_id`. Dùng `accounts`, `students`, `librarians`, `publishers`, `books`, `authors` và các bảng nối. Một phiếu không sao chép họ tên/email sinh viên hoặc tên nhà xuất bản để tránh cập nhật nhiều nơi.
+Loại các phụ thuộc bắc cầu: thông tin sinh viên đi qua `student_id`, thông tin tài khoản đi qua `account_id`, nhà xuất bản đi qua `publisher_id`. Dùng `tai_khoan`, `sinh_vien`, `thu_thu`, `nha_xuat_ban`, `dau_sach`, `tac_gia` và các bảng nối. Một phiếu không sao chép họ tên/email sinh viên hoặc tên nhà xuất bản để tránh cập nhật nhiều nơi.
 
 ### Phụ thuộc hàm và khóa cần giải thích
 
 | Quan hệ / nhóm | Khóa ứng viên và phụ thuộc hàm chính |
 |---|---|
-| `accounts` | `id →` thông tin tài khoản; `username →` cùng thông tin vì username UNIQUE |
-| `students`, `librarians` | `id`, `account_id`, mã sinh viên/thủ thư là các khóa ứng viên trong từng bảng |
-| `books` | `id → title, publisher_id, language, ...`; tên sách không được giả định duy nhất |
-| `book_copies` | `id → book_id, barcode, vị trí, trạng thái`; `barcode →` toàn bộ thông tin bản sách |
-| `book_authors`, `book_genres`, `book_keywords` | Khóa ghép hai FK; không có thuộc tính mô tả phụ thuộc riêng từng nửa khóa |
-| `book_loan_request_items`, `equipment_loan_request_items` | `id` và `(request_id, resource_id)` là khóa ứng viên; khóa ghép quyết định số lượng và hạn trả |
-| `loan_receipts`, `equipment_loans` | `id →` thông tin phiếu; mỗi `request_id` khác NULL chỉ được nối một phiếu |
-| `loan_details`, `equipment_loan_details` | `id →` thông tin từng lượt cấp phát; mã bản sách không duy nhất qua toàn bộ lịch sử |
-| `room_requests` | `id →` lịch đặt; bộ phòng/ngày/giờ không được tự động coi là khóa khi có yêu cầu bị từ chối/hủy |
-| `extensions` | `id → loan_detail_id, librarian_id, old_due_date, new_due_date, extension_date` |
+| `tai_khoan` | `id →` thông tin tài khoản; `username →` cùng thông tin vì username UNIQUE |
+| `sinh_vien`, `thu_thu` | `id`, `account_id`, mã sinh viên/thủ thư là các khóa ứng viên trong từng bảng |
+| `dau_sach` | `id → title, publisher_id, language, ...`; tên sách không được giả định duy nhất |
+| `ban_sach` | `id → book_id, barcode, vị trí, trạng thái`; `barcode →` toàn bộ thông tin bản sách |
+| `dau_sach_tac_gia`, `dau_sach_the_loai`, `dau_sach_tu_khoa` | Khóa ghép hai FK; không có thuộc tính mô tả phụ thuộc riêng từng nửa khóa |
+| `chi_tiet_yeu_cau_muon_sach`, `chi_tiet_yeu_cau_muon_thiet_bi` | `id` và `(request_id, resource_id)` là khóa ứng viên; khóa ghép quyết định số lượng và hạn trả |
+| `phieu_muon_sach`, `phieu_muon_thiet_bi` | `id →` thông tin phiếu; mỗi `request_id` khác NULL chỉ được nối một phiếu |
+| `chi_tiet_muon_sach`, `chi_tiet_muon_thiet_bi` | `id →` thông tin từng lượt cấp phát; mã bản sách không duy nhất qua toàn bộ lịch sử |
+| `yeu_cau_dat_phong` | `id →` lịch đặt; bộ phòng/ngày/giờ không được tự động coi là khóa khi có yêu cầu bị từ chối/hủy |
+| `gia_han_sach` | `id → loan_detail_id, librarian_id, old_due_date, new_due_date, extension_date` |
 
 ### BCNF và các ngoại lệ triển khai
 
@@ -74,9 +74,9 @@ Khi cô yêu cầu mô hình 3NF/BCNF thuần túy, trình bày mô hình logic 
 
 ## 5. Đầu sách, bản sách và thực thể yếu
 
-`books` là đầu sách: tên, nội dung chung, tác giả, nhà xuất bản, ảnh bìa. `book_copies` là mỗi cuốn vật lý: mã vạch riêng, vị trí, tình trạng riêng. Một đầu sách có nhiều bản; phiếu cấp phát tham chiếu `copy_id`, còn yêu cầu tham chiếu `book_id` và số lượng mong muốn.
+`dau_sach` là đầu sách: tên, nội dung chung, tác giả, nhà xuất bản, ảnh bìa. `ban_sach` là mỗi cuốn vật lý: mã vạch riêng, vị trí, tình trạng riêng. Một đầu sách có nhiều bản; phiếu cấp phát tham chiếu `copy_id`, còn yêu cầu tham chiếu `book_id` và số lượng mong muốn.
 
-Hệ thống dùng surrogate key `id` cho các bản sách, dòng phiếu và dòng yêu cầu. Trong mô hình ER triển khai, `book_copies` có khóa nhận diện riêng và barcode UNIQUE nên không nên gọi nó là thực thể yếu chỉ vì có FK đến `books`. Các thực thể kết hợp dùng khóa ghép được trình bày như quan hệ kết hợp. Nếu chọn mô hình ER khái niệm có thực thể yếu, phải nêu khóa bộ phận và quan hệ định danh, rồi giải thích cách ánh xạ sang bảng vật lý.
+Hệ thống dùng surrogate key `id` cho các bản sách, dòng phiếu và dòng yêu cầu. Trong mô hình ER triển khai, `ban_sach` có khóa nhận diện riêng và barcode UNIQUE nên không nên gọi nó là thực thể yếu chỉ vì có FK đến `dau_sach`. Các thực thể kết hợp dùng khóa ghép được trình bày như quan hệ kết hợp. Nếu chọn mô hình ER khái niệm có thực thể yếu, phải nêu khóa bộ phận và quan hệ định danh, rồi giải thích cách ánh xạ sang bảng vật lý.
 
 ## 6. Toàn vẹn và tính nhất quán
 
@@ -108,3 +108,5 @@ Liên kết phiếu cũ chỉ được khôi phục từ ghi chú do hệ thốn
 7. Mở metadata MySQL, từ điển dữ liệu và ERD cùng phiên bản. Giải thích các bước chuẩn hóa bằng một phiếu ví dụ và nêu rõ các cột suy diễn triển khai.
 
 Kiểm thử có ghi dữ liệu chỉ chạy trong `resource_center_test_<digits>`; xem `tests/README.md`.
+
+Tên SQL vật lý đã Việt hóa; đối chiếu tên cũ/API và tên mới tại [bảng ánh xạ](vietnamese-schema.md).

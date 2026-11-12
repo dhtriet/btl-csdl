@@ -8,6 +8,10 @@
 
 ![Nexus — Pink Glam dashboard](docs/images/dashboard-pink-glam.png)
 
+## Tên bảng và cột tiếng Việt
+
+CSDL dùng tên như `tai_khoan`, `dau_sach`, `phieu_muon_sach`, `ten_dang_nhap`, `han_tra`. Database cũ nâng cấp có sao lưu bằng `php scripts/migrate-vietnamese-schema.php --apply`. [Bảng đối chiếu và hướng dẫn Workbench](docs/vietnamese-schema.md).
+
 ## Khám phá Nexus
 
 Gia hạn sách, thiết bị và không gian: sinh viên gửi yêu cầu từ **Đang mượn & lịch sử**, thủ thư duyệt hoặc từ chối trong **Mượn & trả**. [Luồng nghiệp vụ, API và migration](docs/extension-requests.md).

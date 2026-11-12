@@ -1,25 +1,25 @@
 USE resource_center;
 
 -- Dau sach minh hoa cho tim kiem theo mot phan nhan de, vi du: "cấu trúc".
-INSERT INTO publishers (name, address)
+INSERT INTO nha_xuat_ban (ten, dia_chi)
 SELECT 'Nhà xuất bản Đại học Quốc gia Hà Nội', 'Hà Nội'
 WHERE NOT EXISTS (
-    SELECT 1 FROM publishers WHERE name = 'Nhà xuất bản Đại học Quốc gia Hà Nội'
+    SELECT 1 FROM nha_xuat_ban WHERE ten = 'Nhà xuất bản Đại học Quốc gia Hà Nội'
 );
 
-INSERT INTO authors (full_name, nationality, biography)
+INSERT INTO tac_gia (ho_ten, quoc_tich, tieu_su)
 SELECT 'Nguyễn Đức Nghĩa', 'Việt Nam', 'Tác giả tài liệu về cấu trúc dữ liệu và giải thuật.'
 WHERE NOT EXISTS (
-    SELECT 1 FROM authors WHERE full_name = 'Nguyễn Đức Nghĩa'
+    SELECT 1 FROM tac_gia WHERE ho_ten = 'Nguyễn Đức Nghĩa'
 );
 
-INSERT INTO keywords (name)
+INSERT INTO tu_khoa (ten)
 SELECT 'Cấu trúc dữ liệu'
 WHERE NOT EXISTS (
-    SELECT 1 FROM keywords WHERE name = 'Cấu trúc dữ liệu'
+    SELECT 1 FROM tu_khoa WHERE ten = 'Cấu trúc dữ liệu'
 );
 
-INSERT INTO books (title, publication_year, language, summary, pages, cover_image, description, publisher_id)
+INSERT INTO dau_sach (ten_sach, nam_xuat_ban, ngon_ngu, tom_tat, so_trang, anh_bia, mo_ta, ma_nha_xuat_ban)
 SELECT
     'Cấu trúc dữ liệu và giải thuật',
     2015,
@@ -28,58 +28,58 @@ SELECT
     NULL,
     NULL,
     'Đầu sách minh họa cho chức năng tìm kiếm theo một phần tên sách.',
-    p.id
-FROM publishers p
-WHERE p.name = 'Nhà xuất bản Đại học Quốc gia Hà Nội'
+    p.ma
+FROM nha_xuat_ban p
+WHERE p.ten = 'Nhà xuất bản Đại học Quốc gia Hà Nội'
   AND NOT EXISTS (
-      SELECT 1 FROM books
-      WHERE title = 'Cấu trúc dữ liệu và giải thuật'
+      SELECT 1 FROM dau_sach
+      WHERE ten_sach = 'Cấu trúc dữ liệu và giải thuật'
   );
 
-INSERT INTO book_authors (book_id, author_id)
-SELECT b.id, a.id
-FROM books b
-JOIN authors a ON a.full_name = 'Nguyễn Đức Nghĩa'
-WHERE b.title = 'Cấu trúc dữ liệu và giải thuật'
+INSERT INTO dau_sach_tac_gia (ma_dau_sach, ma_tac_gia)
+SELECT b.ma, a.ma
+FROM dau_sach b
+JOIN tac_gia a ON a.ho_ten = 'Nguyễn Đức Nghĩa'
+WHERE b.ten_sach = 'Cấu trúc dữ liệu và giải thuật'
   AND NOT EXISTS (
-      SELECT 1 FROM book_authors ba
-      WHERE ba.book_id = b.id AND ba.author_id = a.id
+      SELECT 1 FROM dau_sach_tac_gia ba
+      WHERE ba.ma_dau_sach = b.ma AND ba.ma_tac_gia = a.ma
   );
 
-INSERT INTO book_genres (book_id, genre_id)
-SELECT b.id, g.id
-FROM books b
-JOIN genres g ON g.name = 'Thuật toán'
-WHERE b.title = 'Cấu trúc dữ liệu và giải thuật'
+INSERT INTO dau_sach_the_loai (ma_dau_sach, ma_the_loai)
+SELECT b.ma, g.ma
+FROM dau_sach b
+JOIN the_loai g ON g.ten = 'Thuật toán'
+WHERE b.ten_sach = 'Cấu trúc dữ liệu và giải thuật'
   AND NOT EXISTS (
-      SELECT 1 FROM book_genres bg
-      WHERE bg.book_id = b.id AND bg.genre_id = g.id
+      SELECT 1 FROM dau_sach_the_loai bg
+      WHERE bg.ma_dau_sach = b.ma AND bg.ma_the_loai = g.ma
   );
 
-INSERT INTO book_genres (book_id, genre_id)
-SELECT b.id, g.id
-FROM books b
-JOIN genres g ON g.name = 'Giáo trình'
-WHERE b.title = 'Cấu trúc dữ liệu và giải thuật'
+INSERT INTO dau_sach_the_loai (ma_dau_sach, ma_the_loai)
+SELECT b.ma, g.ma
+FROM dau_sach b
+JOIN the_loai g ON g.ten = 'Giáo trình'
+WHERE b.ten_sach = 'Cấu trúc dữ liệu và giải thuật'
   AND NOT EXISTS (
-      SELECT 1 FROM book_genres bg
-      WHERE bg.book_id = b.id AND bg.genre_id = g.id
+      SELECT 1 FROM dau_sach_the_loai bg
+      WHERE bg.ma_dau_sach = b.ma AND bg.ma_the_loai = g.ma
   );
 
-INSERT INTO book_keywords (book_id, keyword_id)
-SELECT b.id, k.id
-FROM books b
-JOIN keywords k ON k.name = 'Cấu trúc dữ liệu'
-WHERE b.title = 'Cấu trúc dữ liệu và giải thuật'
+INSERT INTO dau_sach_tu_khoa (ma_dau_sach, ma_tu_khoa)
+SELECT b.ma, k.ma
+FROM dau_sach b
+JOIN tu_khoa k ON k.ten = 'Cấu trúc dữ liệu'
+WHERE b.ten_sach = 'Cấu trúc dữ liệu và giải thuật'
   AND NOT EXISTS (
-      SELECT 1 FROM book_keywords bk
-      WHERE bk.book_id = b.id AND bk.keyword_id = k.id
+      SELECT 1 FROM dau_sach_tu_khoa bk
+      WHERE bk.ma_dau_sach = b.ma AND bk.ma_tu_khoa = k.ma
   );
 
-INSERT INTO book_copies (book_id, barcode, storage_location, condition_status, status)
-SELECT b.id, 'DSA-VN-2015-01', 'Kệ H2', 'good', 'available'
-FROM books b
-WHERE b.title = 'Cấu trúc dữ liệu và giải thuật'
+INSERT INTO ban_sach (ma_dau_sach, ma_vach, vi_tri_luu_tru, tinh_trang, trang_thai)
+SELECT b.ma, 'DSA-VN-2015-01', 'Kệ H2', 'good', 'available'
+FROM dau_sach b
+WHERE b.ten_sach = 'Cấu trúc dữ liệu và giải thuật'
   AND NOT EXISTS (
-      SELECT 1 FROM book_copies WHERE barcode = 'DSA-VN-2015-01'
+      SELECT 1 FROM ban_sach WHERE ma_vach = 'DSA-VN-2015-01'
   );

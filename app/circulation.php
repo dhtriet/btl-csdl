@@ -4,7 +4,7 @@ declare(strict_types=1);
 function circulation_readers(PDO $pdo): array
 {
     require_staff();
-    return $pdo->query("SELECT s.id,s.student_code,a.full_name,s.faculty,s.class_name FROM students s JOIN accounts a ON a.id=s.account_id WHERE a.role='student' ORDER BY s.student_code")->fetchAll();
+    return $pdo->query('SELECT s.ma,s.ma_sinh_vien,a.ho_ten,s.khoa,s.lop FROM sinh_vien s JOIN tai_khoan a ON a.ma=s.ma_tai_khoan WHERE a.vai_tro=\'student\' ORDER BY s.ma_sinh_vien')->fetchAll();
 }
 
 function account_full_detail(PDO $pdo, int $id): array
@@ -14,17 +14,17 @@ function account_full_detail(PDO $pdo, int $id): array
     $data = ['profile'=>$profile, 'history'=>null, 'rooms'=>[], 'handled_books'=>[], 'handled_equipment'=>[], 'extensions'=>[]];
     if ($profile['role'] === 'student') {
         $data['history'] = student_history($pdo, $profile['student_code']);
-        $q = $pdo->prepare('SELECT r.id,ro.name,r.use_date,r.start_time,r.end_time,r.status,r.purpose FROM room_requests r JOIN rooms ro ON ro.id=r.room_id JOIN students s ON s.id=r.student_id WHERE s.account_id=? ORDER BY r.use_date DESC LIMIT 100');
+        $q = $pdo->prepare('SELECT r.ma,ro.ten,r.ngay_su_dung,r.gio_bat_dau,r.gio_ket_thuc,r.trang_thai,r.muc_dich FROM yeu_cau_dat_phong r JOIN phong ro ON ro.ma=r.ma_phong JOIN sinh_vien s ON s.ma=r.ma_ho_so_sinh_vien WHERE s.ma_tai_khoan=? ORDER BY r.ngay_su_dung DESC LIMIT 100');
         $q->execute([$id]); $data['rooms'] = $q->fetchAll();
     }
     if ($profile['role'] === 'librarian') {
         foreach (['handled_books'=>'loan_receipts', 'handled_equipment'=>'equipment_loans'] as $key=>$table) {
-            $q = $pdo->prepare("SELECT p.id,p.request_id,p.registered_at,p.status,s.student_code,a.full_name AS student_name FROM $table p JOIN librarians l ON l.id=p.librarian_id JOIN students s ON s.id=p.student_id JOIN accounts a ON a.id=s.account_id WHERE l.account_id=? ORDER BY p.id DESC LIMIT 100");
+            $q = $pdo->prepare("SELECT p.ma,p.ma_yeu_cau,p.thoi_diem_dang_ky,p.trang_thai,s.ma_sinh_vien,a.ho_ten AS student_name FROM $table p JOIN thu_thu l ON l.ma=p.ma_ho_so_thu_thu JOIN sinh_vien s ON s.ma=p.ma_ho_so_sinh_vien JOIN tai_khoan a ON a.ma=s.ma_tai_khoan WHERE l.ma_tai_khoan=? ORDER BY p.ma DESC LIMIT 100");
             $q->execute([$id]); $data[$key] = $q->fetchAll();
         }
-        $q = $pdo->prepare('SELECT e.id,e.loan_detail_id,e.old_due_date,e.new_due_date,e.extension_date FROM extensions e JOIN librarians l ON l.id=e.librarian_id WHERE l.account_id=? ORDER BY e.id DESC LIMIT 100');
+        $q = $pdo->prepare('SELECT e.ma,e.ma_chi_tiet_muon_sach,e.han_tra_cu,e.han_tra_moi,e.ngay_gia_han FROM gia_han_sach e JOIN thu_thu l ON l.ma=e.ma_ho_so_thu_thu WHERE l.ma_tai_khoan=? ORDER BY e.ma DESC LIMIT 100');
         $q->execute([$id]); $data['extensions'] = $q->fetchAll();
-        $q = $pdo->prepare('SELECT r.id,ro.name,r.use_date,r.start_time,r.end_time,r.status,r.purpose FROM room_requests r JOIN rooms ro ON ro.id=r.room_id JOIN librarians l ON l.id=r.librarian_id WHERE l.account_id=? ORDER BY r.use_date DESC LIMIT 100');
+        $q = $pdo->prepare('SELECT r.ma,ro.ten,r.ngay_su_dung,r.gio_bat_dau,r.gio_ket_thuc,r.trang_thai,r.muc_dich FROM yeu_cau_dat_phong r JOIN phong ro ON ro.ma=r.ma_phong JOIN thu_thu l ON l.ma=r.ma_ho_so_thu_thu WHERE l.ma_tai_khoan=? ORDER BY r.ngay_su_dung DESC LIMIT 100');
         $q->execute([$id]); $data['rooms'] = $q->fetchAll();
     }
     return $data;
@@ -36,7 +36,7 @@ function request_trace(PDO $pdo, string $type, int $id): array
     if (!in_array($type, ['book', 'equipment'], true)) throw new ApiException('Loại phiếu không hợp lệ.', 404);
     $table = $type === 'book' ? 'book_loan_requests' : 'equipment_loan_requests';
     $receiptTable = $type === 'book' ? 'loan_receipts' : 'equipment_loans';
-    $q = $pdo->prepare("SELECT r.id,r.student_id,r.source,r.status,r.requested_at,r.reviewed_at,r.review_note,s.student_code,a.full_name AS student_name,la.full_name AS librarian_name,p.id AS receipt_id FROM $table r JOIN students s ON s.id=r.student_id JOIN accounts a ON a.id=s.account_id LEFT JOIN librarians l ON l.id=r.librarian_id LEFT JOIN accounts la ON la.id=l.account_id LEFT JOIN $receiptTable p ON p.request_id=r.id WHERE r.id=?");
+    $q = $pdo->prepare("SELECT r.ma,r.ma_ho_so_sinh_vien,r.nguon_tao,r.trang_thai,r.thoi_diem_gui_yeu_cau,r.thoi_diem_xet_duyet,r.ghi_chu_xet_duyet,s.ma_sinh_vien,a.ho_ten AS student_name,la.ho_ten AS librarian_name,p.ma AS ma_phieu_muon_sach FROM $table r JOIN sinh_vien s ON s.ma=r.ma_ho_so_sinh_vien JOIN tai_khoan a ON a.ma=s.ma_tai_khoan LEFT JOIN thu_thu l ON l.ma=r.ma_ho_so_thu_thu LEFT JOIN tai_khoan la ON la.ma=l.ma_tai_khoan LEFT JOIN $receiptTable p ON p.request_id=r.id WHERE r.id=?");
     $q->execute([$id]); $data = $q->fetch();
     if (!$data) throw new ApiException('Không tìm thấy yêu cầu.', 404);
     if ($user['role'] === 'student' && (int)$user['student_id'] !== (int)$data['student_id']) throw new ApiException('Bạn chỉ được xem yêu cầu của mình.', 403);
@@ -45,7 +45,7 @@ function request_trace(PDO $pdo, string $type, int $id): array
     if ($data['receipt_id']) {
         if ($type === 'book') $data['details'] = loan_receipt_detail($pdo, (int)$data['receipt_id'])['details'];
         else {
-            $q = $pdo->prepare('SELECT d.id,e.name AS title,d.quantity,d.borrow_date,d.due_date,d.return_date,d.status FROM equipment_loan_details d JOIN equipment e ON e.id=d.equipment_id WHERE d.loan_id=? ORDER BY d.id');
+            $q = $pdo->prepare('SELECT d.ma,e.ten AS ten_sach,d.so_luong,d.ngay_muon,d.han_tra,d.ngay_tra,d.trang_thai FROM chi_tiet_muon_thiet_bi d JOIN thiet_bi e ON e.ma=d.ma_thiet_bi WHERE d.ma_phieu_muon_thiet_bi=? ORDER BY d.ma');
             $q->execute([$data['receipt_id']]); $data['details'] = $q->fetchAll();
         }
     }
@@ -59,7 +59,7 @@ function create_counter_loan(PDO $pdo, array $body): array
     $type = $body['type'] ?? '';
     if (!in_array($type, ['book', 'equipment'], true)) throw new ApiException('Chọn sách hoặc thiết bị.');
     $code = resource_text($body, 'student_code', 30, true);
-    $q = $pdo->prepare("SELECT s.id FROM students s JOIN accounts a ON a.id=s.account_id WHERE s.student_code=? AND a.role='student'");
+    $q = $pdo->prepare('SELECT s.ma FROM sinh_vien s JOIN tai_khoan a ON a.ma=s.ma_tai_khoan WHERE s.ma_sinh_vien=? AND a.vai_tro=\'student\'');
     $q->execute([$code]); $studentId = $q->fetchColumn();
     if (!$studentId) throw new ApiException('Không tìm thấy sinh viên.', 404);
     if (is_array($body['items'] ?? null)) foreach ($body['items'] as $item) {

@@ -1,26 +1,26 @@
-CREATE TABLE IF NOT EXISTS resource_extension_requests (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    equipment_detail_id INT UNSIGNED NULL,
-    room_request_id INT UNSIGNED NULL,
-    old_deadline DATETIME NOT NULL,
-    requested_deadline DATETIME NOT NULL,
-    reason VARCHAR(500) NOT NULL DEFAULT '',
-    status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
-    requested_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    librarian_id INT UNSIGNED NULL,
-    reviewed_at DATETIME NULL,
-    review_note VARCHAR(500) NULL,
-    pending_equipment_id INT UNSIGNED GENERATED ALWAYS AS (CASE WHEN status='pending' THEN equipment_detail_id ELSE NULL END) STORED,
-    pending_room_id INT UNSIGNED GENERATED ALWAYS AS (CASE WHEN status='pending' THEN room_request_id ELSE NULL END) STORED,
-    UNIQUE KEY uq_resource_extension_equipment (pending_equipment_id),
-    UNIQUE KEY uq_resource_extension_room (pending_room_id),
-    CONSTRAINT fk_resource_extension_equipment FOREIGN KEY (equipment_detail_id) REFERENCES equipment_loan_details(id),
-    CONSTRAINT fk_resource_extension_room FOREIGN KEY (room_request_id) REFERENCES room_requests(id),
-    CONSTRAINT fk_resource_extension_staff FOREIGN KEY (librarian_id) REFERENCES librarians(id),
-    CONSTRAINT chk_resource_extension_target CHECK ((equipment_detail_id IS NOT NULL) + (room_request_id IS NOT NULL) = 1),
-    CONSTRAINT chk_resource_extension_deadline CHECK (requested_deadline > old_deadline),
+CREATE TABLE IF NOT EXISTS yeu_cau_gia_han_tai_nguyen (
+    ma INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ma_chi_tiet_muon_thiet_bi INT UNSIGNED NULL,
+    ma_yeu_cau_dat_phong INT UNSIGNED NULL,
+    han_su_dung_cu DATETIME NOT NULL,
+    han_su_dung_de_nghi DATETIME NOT NULL,
+    ly_do VARCHAR(500) NOT NULL DEFAULT '',
+    trang_thai ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+    thoi_diem_gui_yeu_cau DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ma_ho_so_thu_thu INT UNSIGNED NULL,
+    thoi_diem_xet_duyet DATETIME NULL,
+    ghi_chu_xet_duyet VARCHAR(500) NULL,
+    khoa_cho_duyet_thiet_bi INT UNSIGNED GENERATED ALWAYS AS (CASE WHEN trang_thai='pending' THEN ma_chi_tiet_muon_thiet_bi ELSE NULL END) STORED,
+    khoa_cho_duyet_phong INT UNSIGNED GENERATED ALWAYS AS (CASE WHEN trang_thai='pending' THEN ma_yeu_cau_dat_phong ELSE NULL END) STORED,
+    UNIQUE KEY uq_resource_extension_equipment (khoa_cho_duyet_thiet_bi),
+    UNIQUE KEY uq_resource_extension_room (khoa_cho_duyet_phong),
+    CONSTRAINT fk_resource_extension_equipment FOREIGN KEY (ma_chi_tiet_muon_thiet_bi) REFERENCES chi_tiet_muon_thiet_bi(ma),
+    CONSTRAINT fk_resource_extension_room FOREIGN KEY (ma_yeu_cau_dat_phong) REFERENCES yeu_cau_dat_phong(ma),
+    CONSTRAINT fk_resource_extension_staff FOREIGN KEY (ma_ho_so_thu_thu) REFERENCES thu_thu(ma),
+    CONSTRAINT chk_resource_extension_target CHECK ((ma_chi_tiet_muon_thiet_bi IS NOT NULL) + (ma_yeu_cau_dat_phong IS NOT NULL) = 1),
+    CONSTRAINT chk_resource_extension_deadline CHECK (han_su_dung_de_nghi > han_su_dung_cu),
     CONSTRAINT chk_resource_extension_review CHECK (
-        (status='pending' AND librarian_id IS NULL AND reviewed_at IS NULL)
-        OR (status IN ('approved','rejected') AND librarian_id IS NOT NULL AND reviewed_at IS NOT NULL)
+        (trang_thai='pending' AND ma_ho_so_thu_thu IS NULL AND thoi_diem_xet_duyet IS NULL)
+        OR (trang_thai IN ('approved','rejected') AND ma_ho_so_thu_thu IS NOT NULL AND thoi_diem_xet_duyet IS NOT NULL)
     )
 ) ENGINE=InnoDB;
