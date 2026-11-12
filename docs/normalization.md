@@ -8,7 +8,7 @@ Phạm vi hiện tại không có nghiệp vụ lương, nhiều chi nhánh, ph�
 
 ## 2. Nguồn mô hình dùng trong báo cáo và slide
 
-1. `database/schema.sql`: khởi tạo mới, 26 bảng nghiệp vụ.
+1. `database/schema.sql`: khởi tạo mới, 27 bảng nghiệp vụ.
 2. `scripts/migrate-circulation.php`: nâng cấp dữ liệu cũ, sao lưu trước DDL, khởi tạo số lượng không khả dụng và nối phiếu cũ khi có bằng chứng duy nhất.
 3. [database-schema.md](database-schema.md): từ điển tất cả thuộc tính, khóa và CHECK của CSDL đang chạy.
 4. [database-erd.mmd](database-erd.mmd): ERD Mermaid sinh từ cùng metadata với từ điển. Nhập tệp này vào công cụ Mermaid để xuất hình cho báo cáo và slide.
@@ -65,12 +65,12 @@ Loại các phụ thuộc bắc cầu: thông tin sinh viên đi qua `student_id
 
 Đối với các quan hệ danh mục/bảng nối chỉ có các phụ thuộc hàm đã nêu, các định thức là khóa ứng viên nên có thể lập luận BCNF theo giả thiết nghiệp vụ đó. **Không tuyên bố toàn bộ CSDL vật lý đạt BCNF một cách tuyệt đối**:
 
-- `return_status`, `late_days` được suy ra từ ngày trả/hạn trả; `extension_count` là số đếm lưu sẵn. Đây là phi chuẩn hóa có kiểm soát; CHECK đảm bảo kết quả trả/ngày trễ khớp ngày, transaction cập nhật gia hạn cùng lịch sử.
+- `late_days` là số ngày trễ do thủ thư xác nhận khi nhận trả, mặc định 0; `return_status` suy ra từ số ngày này. Ngày nhận trả vẫn là ngày hệ thống, hạn trả giữ nguyên. `extension_count` là số đếm lưu sẵn. CHECK đảm bảo trạng thái đúng hạn/trễ khớp số ngày thủ thư nhập; transaction cập nhật gia hạn cùng lịch sử.
 - `equipment.available_quantity` và `unavailable_quantity` là số dư lưu sẵn. Số đang mượn tính từ chi tiết chưa trả, transaction nghiệp vụ kiểm tra phương trình cân bằng. CHECK trong một dòng không thể tự chứng minh tổng trên nhiều bảng.
 - `active_copy_id` và `pending_loan_id` là cột kỹ thuật GENERATED cho ràng buộc duy nhất có điều kiện; không phải thuộc tính nghiệp vụ độc lập.
 - `rooms.included_equipment` là văn bản mô tả tiện ích, không dùng để hạch toán thiết bị. Nếu quản lý số lượng thiết bị cấp cho từng phòng, cần thiết kế quan hệ `room_equipment` và nghiệp vụ điều chuyển tương ứng.
 
-Khi cô yêu cầu mô hình 3NF/BCNF thuần túy, trình bày mô hình logic bỏ các số suy diễn và dùng truy vấn/view tính chúng; chỉ rõ ánh xạ từ mô hình logic sang các cột triển khai nêu trên. Số 26 bảng là số bảng vật lý hiện hành, không phải một bằng chứng đạt dạng chuẩn.
+Khi cô yêu cầu mô hình 3NF/BCNF thuần túy, trình bày mô hình logic bỏ các số suy diễn và dùng truy vấn/view tính chúng; chỉ rõ ánh xạ từ mô hình logic sang các cột triển khai nêu trên. Số 27 bảng là số bảng vật lý hiện hành, không phải một bằng chứng đạt dạng chuẩn.
 
 ## 5. Đầu sách, bản sách và thực thể yếu
 

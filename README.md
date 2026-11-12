@@ -4,13 +4,13 @@
 
 [![Website](https://img.shields.io/badge/Website-Xem_demo-D81B60?style=for-the-badge)](https://btl-csdl-onqi.onrender.com/)
 [![PHP](https://img.shields.io/badge/PHP-8.2-777BB4?style=for-the-badge&logo=php&logoColor=white)](Dockerfile)
-[![Database](https://img.shields.io/badge/CSDL-26_bảng-AD1457?style=for-the-badge)](docs/database-schema.md)
+[![Database](https://img.shields.io/badge/CSDL-27_bảng-AD1457?style=for-the-badge)](docs/database-schema.md)
 
 ![Nexus — Pink Glam dashboard](docs/images/dashboard-pink-glam.png)
 
 ## Khám phá Nexus
 
-Gia hạn sách: sinh viên gửi yêu cầu từ **Đang mượn & lịch sử**, thủ thư duyệt hoặc từ chối trong **Mượn & trả**. [Luồng nghiệp vụ, API và migration](docs/extension-requests.md).
+Gia hạn sách, thiết bị và không gian: sinh viên gửi yêu cầu từ **Đang mượn & lịch sử**, thủ thư duyệt hoặc từ chối trong **Mượn & trả**. [Luồng nghiệp vụ, API và migration](docs/extension-requests.md).
 
 | Dành cho sinh viên | Dành cho thủ thư và quản trị |
 |---|---|
@@ -48,6 +48,8 @@ Ban demo full-stack cho he thong quan ly trung tam tai nguyen hoc tap.
 - MySQL 8+
 - HTML, CSS, JavaScript thuan
 - MySQL schema va seed data nam trong `database/`
+
+Database đang dùng nâng cấp thêm gia hạn thiết bị/phòng bằng `php scripts/migrate-resource-extensions.php --apply` (tự sao lưu, chạy lại an toàn).
 
 ## Chay local
 

@@ -83,6 +83,11 @@ function showError(element, message) {
 
 function setUser(user) {
   $('#extension-requests-list').replaceChildren();
+  ['personal-room-renewals', 'spaces-room-renewals'].forEach(id => {
+    const el = document.getElementById(id);
+    el.replaceChildren();
+    el.closest('article').classList.add('is-hidden');
+  });
   state.user = user;
   if (typeof configureCirculationDesk === 'function') configureCirculationDesk();
   if (!user) {
@@ -142,7 +147,9 @@ function configureWorkspace() {
   const panels = $$('#view-circulation .circulation-grid .panel h2');
   panels[0].textContent = student ? 'Tài nguyên đang mượn' : 'Sách cần xử lý';
   panels[1].textContent = student ? 'Lịch sử của bạn' : 'Lịch sử gần đây';
-  $('#view-circulation .panel-badge.danger').textContent = student ? 'Theo hạn trả' : 'Ưu tiên quá hạn lâu';
+  const circulationBadge = $('#view-circulation .panel-badge.danger');
+  circulationBadge.classList.toggle('is-hidden', state.user?.role === 'librarian');
+  circulationBadge.textContent = student ? 'Theo hạn trả' : 'Ưu tiên quá hạn lâu';
 }
 
 function configureCampusDashboard(student) {
@@ -271,8 +278,9 @@ function renderPersonalLoans(items, extensionRequests = []) {
   if (!items.length) return `<div class="empty-state">${uiIcon('catalog')}<strong>Bạn chưa mượn tài nguyên nào.</strong><p>Một cuốn sách cho buổi học tiếp theo đang chờ bạn khám phá.</p><button type="button" class="text-button" data-campus-find-book>Tìm sách để mượn ${uiIcon('arrow')}</button></div>`;
   return items.map((item) => {
     const pending = extensionRequests.some(r => Number(r.loan_detail_id) === Number(item.loan_detail_id) && r.status === 'pending');
-    const renewal = item.resource_type === 'book' && item.loan_detail_id && !item.return_date && state.user?.role === 'student'
+    let renewal = item.resource_type === 'book' && item.loan_detail_id && !item.return_date && state.user?.role === 'student'
       ? `<button type="button" class="return-button extension-button" data-extension-id="${item.loan_detail_id}" data-extension-due="${escapeHtml(item.due_date)}" ${pending || Number(item.extension_count) >= 3 ? 'disabled' : ''}>${pending ? 'Chờ duyệt gia hạn' : Number(item.extension_count) >= 3 ? 'Đã gia hạn 3 lần' : 'Gia hạn'}</button>` : '';
+    if (item.resource_type === 'equipment' && item.equipment_detail_id && !item.return_date && state.user?.role === 'student') renewal = resourceRenewalButton('equipment', item.equipment_detail_id, item.resource_name, item.due_date, extensionRequests);
     return `<div class="personal-loan"><span class="loan-icon">${uiIcon(item.resource_type === 'book' ? 'catalog' : 'equipment')}</span><div><strong>${escapeHtml(item.resource_name)}</strong><small>${item.resource_type === 'book' ? 'Sách' : `Thiết bị · ${escapeHtml(item.quantity || 1)} chiếc`} · Hạn trả ${formatDate(item.due_date)}</small>${renewal}</div><span class="status-pill ${Number(item.overdue) > 0 ? 'danger' : ''}">${Number(item.overdue) > 0 ? 'Quá hạn' : 'Đang mượn'}</span></div>`;
   }).join('');
 }
@@ -634,13 +642,15 @@ async function loadCirculation() {
       const active = data.items.filter((item) => !item.return_date).map((item) => ({ ...item, overdue: item.status === 'Qua han' })).sort((a, b) => a.due_date.localeCompare(b.due_date));
       $('#overdue-books-table').innerHTML = renderPersonalLoans(active, requests.data);
       $('#overdue-books-table').querySelectorAll('.extension-button').forEach(button => button.addEventListener('click', () => openExtensionModal(button)));
+      bindResourceRenewals($('#overdue-books-table'));
       renderExtensionRequests(requests.data);
+      await loadPersonalRoomRenewals();
       const returned = data.items.filter((item) => item.return_date).sort((a, b) => b.return_date.localeCompare(a.return_date));
       $('#returned-books-list').innerHTML = returned.length ? returned.map((item) => `<div class="request-row"><strong>${escapeHtml(item.resource_name)}</strong><span>Đã trả ${formatDate(item.return_date)} · ${item.resource_type === 'book' ? 'Sách' : 'Thiết bị'}</span></div>`).join('') : '<div class="empty-state">Chưa có tài nguyên đã trả.</div>';
       return;
     }
-    const [overdue, returned] = await Promise.all([api('/api/overdue-books'), api('/api/books/returned')]);
-    renderOverdueBooks(overdue.data);
+    const [overdue, returned] = await Promise.all([state.user?.role === 'librarian' ? Promise.resolve(null) : api('/api/overdue-books'), api('/api/books/returned')]);
+    if (overdue) renderOverdueBooks(overdue.data);
     renderReturnedBooks(returned.data);
     await loadExtensionRequests();
   } catch (error) {
@@ -654,7 +664,7 @@ function returnStatusLabel(item) {
 }
 
 function renderActiveBookReturns(items) {
-  const element = $('#active-book-returns');
+  const element = $('#overdue-books-table');
   if (!items.length) {
     element.innerHTML = '<div class="empty-state">Không còn sách chưa trả.</div>';
     return;
@@ -707,16 +717,18 @@ async function loadReturns() {
     bindLoanReceiptButtons();
     $$('[data-return-kind]').forEach((button) => button.addEventListener('click', () => openReturnModal(button)));
   } catch (error) {
-    showError($('#active-book-returns'), error.message);
+    showError($('#overdue-books-table'), error.message);
     showError($('#active-equipment-returns'), error.message);
     showError($('#room-usage-history'), error.message);
   }
 }
 
-function renderExtensionRequests(items) {
+function renderExtensionRequests(allItems) {
+  const items = allItems.filter(item => !item.resource_type);
   const staff = state.user?.role === 'librarian';
   const labels = { pending: 'Chờ duyệt', approved: 'Đã duyệt', rejected: 'Từ chối' };
-  $('#extension-requests-list').innerHTML = items.length ? `<table class="data-table"><thead><tr><th>Sách / người mượn</th><th>Hạn trả</th><th>Trạng thái</th><th>Xử lý</th></tr></thead><tbody>${items.map(item => `<tr><td><strong>${escapeHtml(item.title)}</strong><br>${escapeHtml(item.barcode)}<br>${escapeHtml(item.student_name)} · ${escapeHtml(item.student_code)}${item.reason ? `<br>Lý do: ${escapeHtml(item.reason)}` : ''}</td><td>Hạn cũ: ${formatDate(item.old_due_date)}<br>Đề nghị: <strong>${formatDate(item.requested_due_date)}</strong></td><td><span class="status-pill ${item.status === 'pending' ? 'warning' : item.status === 'rejected' ? 'danger' : ''}">${labels[item.status]}</span>${item.return_date && item.status === 'pending' ? '<br>Sách đã trả' : ''}</td><td>${staff && item.status === 'pending' ? `<button class="return-button" data-review-extension="${item.id}">Xem yêu cầu</button>` : `${escapeHtml(item.librarian_name || 'Đang chờ thủ thư')}${item.review_note ? `<br>${escapeHtml(item.review_note)}` : ''}`}</td></tr>`).join('')}</tbody></table>` : '<div class="empty-state">Chưa có yêu cầu gia hạn sách.</div>';
+  $('#extension-requests-list').innerHTML = items.length ? `<table class="data-table"><thead><tr><th>Sách / người mượn</th><th>Hạn trả</th><th>Trạng thái</th><th>Xử lý</th></tr></thead><tbody>${items.map(item => `<tr><td><strong>${escapeHtml(item.title)}</strong><br>${escapeHtml(item.barcode)}<br>${escapeHtml(item.student_name)} · ${escapeHtml(item.student_code)}${item.reason ? `<br>Lý do: ${escapeHtml(item.reason)}` : ''}</td><td>Hạn cũ: ${formatDate(item.old_due_date)}<br>Đề nghị: <strong>${formatDate(item.requested_due_date)}</strong></td><td><span class="status-pill ${item.status === 'pending' ? 'warning' : item.status === 'rejected' ? 'danger' : ''}">${labels[item.status]}</span><br><small>${item.return_date ? `Đã trả sách ${formatDate(item.return_date)}` : 'Sách chưa trả'}</small></td><td>${staff && item.status === 'pending' ? `<button class="return-button" data-review-extension="${item.id}">Xem yêu cầu</button>` : `${escapeHtml(item.librarian_name || 'Đang chờ thủ thư')}${item.review_note ? `<br>${escapeHtml(item.review_note)}` : ''}`}</td></tr>`).join('')}</tbody></table>` : (allItems.length ? '' : '<div class="empty-state">Chưa có yêu cầu gia hạn tài nguyên.</div>');
+  $('#extension-requests-list').append(renderResourceExtensionRequests(allItems.filter(item => item.resource_type)));
   $$('[data-review-extension]').forEach(button => button.addEventListener('click', () => {
     const item = items.find(row => Number(row.id) === Number(button.dataset.reviewExtension));
     $('#extension-modal-content').innerHTML = `<h2 id="extension-modal-title">Xét yêu cầu gia hạn</h2><p>${escapeHtml(item.title)} · ${escapeHtml(item.barcode)}</p><p>${escapeHtml(item.student_name)} · ${escapeHtml(item.student_code)}</p><p>Hạn cũ: ${formatDate(item.old_due_date)}<br>Hạn đề nghị: <strong>${formatDate(item.requested_due_date)}</strong></p><p>Lý do: ${escapeHtml(item.reason || 'Không cung cấp')}</p><form id="extension-review-form" class="stack-form"><label>Ghi chú xử lý (bắt buộc khi từ chối)<textarea name="review_note" rows="3" maxlength="500"></textarea></label><div id="extension-error" class="error-state is-hidden" role="alert"></div><button class="primary-button" name="decision" value="approved" type="submit" ${item.return_date ? 'disabled' : ''}>Duyệt gia hạn</button><button class="text-button" name="decision" value="rejected" type="submit">Từ chối yêu cầu</button></form>`;
@@ -801,7 +813,7 @@ function openReturnModal(button) {
   const row = button.closest('tr');
   const resourceName = row?.querySelector('td strong')?.textContent || 'tài nguyên';
   const typeLabel = button.dataset.returnKind === 'books' ? 'sách' : 'thiết bị';
-  $('#return-modal-content').innerHTML = `<p class="eyebrow accent">RETURN CONFIRMATION</p><h2 id="return-modal-title">Ghi nhận trả ${typeLabel}</h2><p class="modal-subtitle">${escapeHtml(resourceName)}</p><form id="return-form" class="stack-form" data-return-kind="${escapeHtml(button.dataset.returnKind)}" data-return-id="${escapeHtml(button.dataset.returnId)}"><p class="form-hint">Ngày nhận trả là hôm nay. Trạng thái đúng hạn hoặc trễ hạn và số ngày trễ được tự động tính theo hạn trả đã lưu.</p><button class="primary-button" type="submit">Xác nhận đã trả <span>→</span></button></form>`;
+  $('#return-modal-content').innerHTML = `<h2 id="return-modal-title">Ghi nhận trả ${typeLabel}</h2><p class="modal-subtitle">${escapeHtml(resourceName)}</p><form id="return-form" class="stack-form" data-return-kind="${escapeHtml(button.dataset.returnKind)}" data-return-id="${escapeHtml(button.dataset.returnId)}"><label>Số ngày trễ<input name="late_days" type="number" min="0" max="65535" step="1" value="0" required></label><p class="form-hint">Nhập 0 nếu trả đúng hạn. Số ngày trễ do thủ thư xác nhận sẽ được lưu vào phiếu mượn.</p><button class="primary-button" type="submit">Xác nhận đã trả <span>→</span></button></form>`;
   $('#return-modal').classList.remove('is-hidden');
   $('#return-form').addEventListener('submit', submitReturnForm);
 }
@@ -812,7 +824,7 @@ async function submitReturnForm(event) {
   const button = form.querySelector('button[type="submit"]');
   button.disabled = true;
   try {
-    const success = await markReturned({ dataset: { returnKind: form.dataset.returnKind, returnId: form.dataset.returnId } });
+    const success = await markReturned({ dataset: { returnKind: form.dataset.returnKind, returnId: form.dataset.returnId } }, { late_days: Number(new FormData(form).get('late_days')) });
     if (success) closeReturnModal();
     else button.disabled = false;
   } catch (error) {
@@ -970,6 +982,7 @@ async function loadSpaces() {
   try {
     const { data } = await api('/api/room-requests?status=pending');
     renderRequests($('#pending-requests'), data);
+    await loadPersonalRoomRenewals();
   } catch (error) {
     showToast(error.message);
   }

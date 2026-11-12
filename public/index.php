@@ -15,6 +15,7 @@ require_once __DIR__ . '/../app/queries/books.php';
 require_once __DIR__ . '/../app/assistant.php';
 require_once __DIR__ . '/../app/circulation.php';
 require_once __DIR__ . '/../app/extension_requests.php';
+require_once __DIR__ . '/../app/resource_extensions.php';
 
 final class ApiException extends RuntimeException
 {
@@ -188,7 +189,10 @@ function route_api(PDO $pdo, string $method, array $segments): void
         throw new ApiException('Gia hạn cần có yêu cầu của sinh viên và được thủ thư duyệt.',403);
     }
 
-    if ($resource==='extension-requests' && $method==='GET') json_response(['data'=>extension_requests_list($pdo)]);
+    if ($resource==='resource-extension-requests' && $method==='GET') json_response(['data'=>resource_extensions_list($pdo)]);
+    if ($resource==='resource-extension-requests' && $method==='POST' && $id===null) json_response(['data'=>resource_extension_create($pdo,request_body())],201);
+    if ($resource==='resource-extension-requests' && $method==='POST' && ctype_digit((string)$id) && $childId==='review') json_response(['data'=>resource_extension_review($pdo,(int)$id,request_body())]);
+    if ($resource==='extension-requests' && $method==='GET') json_response(['data'=>array_merge(extension_requests_list($pdo),resource_extensions_list($pdo))]);
     if ($resource==='extension-requests' && $method==='POST' && $id===null) {
         $body=request_body();
         json_response(['data'=>extension_request_create($pdo,resource_int($body,'loan_detail_id',1,PHP_INT_MAX),$body)],201);
@@ -840,7 +844,7 @@ function pending_borrow_requests(PDO $pdo, int $limit = 50): array
 {
     $limit = max(1, min($limit, 100));
     $statement = $pdo->prepare(
-        "SELECT 'book' AS request_type, r.id, r.requested_at, 'Muon sach' AS request_label,
+        "SELECT 'book' AS request_type, r.id, r.requested_at, 'Mượn sách' AS request_label,
                 a.full_name AS student_name, s.student_code,
                 GROUP_CONCAT(CONCAT(b.title, ' · Số lượng: ', i.quantity, ' (hạn ', DATE_FORMAT(i.requested_due_date, '%d/%m/%Y'), ')') ORDER BY i.id SEPARATOR ' | ') AS items
          FROM book_loan_requests r
@@ -851,7 +855,7 @@ function pending_borrow_requests(PDO $pdo, int $limit = 50): array
          WHERE r.status = 'pending'
          GROUP BY r.id, r.requested_at, a.full_name, s.student_code
          UNION ALL
-         SELECT 'equipment' AS request_type, r.id, r.requested_at, 'Muon thiet bi' AS request_label,
+         SELECT 'equipment' AS request_type, r.id, r.requested_at, 'Mượn thiết bị' AS request_label,
                 a.full_name AS student_name, s.student_code,
                 GROUP_CONCAT(CONCAT(e.name, ' x', i.quantity, ' (hạn ', DATE_FORMAT(i.requested_due_date, '%d/%m/%Y'), ')') ORDER BY i.id SEPARATOR ' | ') AS items
          FROM equipment_loan_requests r
@@ -862,7 +866,7 @@ function pending_borrow_requests(PDO $pdo, int $limit = 50): array
          WHERE r.status = 'pending'
          GROUP BY r.id, r.requested_at, a.full_name, s.student_code
          UNION ALL
-         SELECT 'room' AS request_type, rr.id, rr.created_at AS requested_at, 'Dat phong' AS request_label,
+         SELECT 'room' AS request_type, rr.id, rr.created_at AS requested_at, 'Đặt phòng' AS request_label,
                 a.full_name AS student_name, s.student_code,
                 CONCAT(r.name, ' - ', DATE_FORMAT(rr.use_date, '%d/%m/%Y'), ' ', TIME_FORMAT(rr.start_time, '%H:%i'), '-', TIME_FORMAT(rr.end_time, '%H:%i'), ' (', rr.purpose, ')') AS items
          FROM room_requests rr
@@ -885,7 +889,7 @@ function reviewed_borrow_requests(PDO $pdo, int $limit = 100): array
         "SELECT * FROM (
             SELECT 'book' AS request_type, r.id, r.requested_at, r.reviewed_at, r.status,
                    r.note AS request_note, r.review_note,
-                   'Muon sach' AS request_label, a.full_name AS student_name, s.student_code,
+                   'Mượn sách' AS request_label, a.full_name AS student_name, s.student_code,
                    GROUP_CONCAT(CONCAT(b.title, ' · Số lượng: ', i.quantity, ' (hạn ', DATE_FORMAT(i.requested_due_date, '%d/%m/%Y'), ')') ORDER BY i.id SEPARATOR ' | ') AS items,
                    la.full_name AS librarian_name
             FROM book_loan_requests r
@@ -901,7 +905,7 @@ function reviewed_borrow_requests(PDO $pdo, int $limit = 100): array
             UNION ALL
             SELECT 'equipment' AS request_type, r.id, r.requested_at, r.reviewed_at, r.status,
                    r.note AS request_note, r.review_note,
-                   'Muon thiet bi' AS request_label, a.full_name AS student_name, s.student_code,
+                   'Mượn thiết bị' AS request_label, a.full_name AS student_name, s.student_code,
                    GROUP_CONCAT(CONCAT(e.name, ' x', i.quantity, ' (hạn ', DATE_FORMAT(i.requested_due_date, '%d/%m/%Y'), ')') ORDER BY i.id SEPARATOR ' | ') AS items,
                    la.full_name AS librarian_name
             FROM equipment_loan_requests r
@@ -917,7 +921,7 @@ function reviewed_borrow_requests(PDO $pdo, int $limit = 100): array
             UNION ALL
             SELECT 'room' AS request_type, rr.id, rr.created_at AS requested_at, rr.reviewed_at,
                    rr.status, NULL AS request_note, rr.review_note,
-                   'Dat phong' AS request_label, a.full_name AS student_name, s.student_code,
+                   'Đặt phòng' AS request_label, a.full_name AS student_name, s.student_code,
                    CONCAT(r.name, ' - ', DATE_FORMAT(rr.use_date, '%d/%m/%Y'), ' ',
                           TIME_FORMAT(rr.start_time, '%H:%i'), '-', TIME_FORMAT(rr.end_time, '%H:%i'),
                           ' (', rr.purpose, ')') AS items,
@@ -942,20 +946,20 @@ function review_borrow_request(PDO $pdo, string $type, int $requestId): array
 {
     $librarian = require_role('librarian');
     if (empty($librarian['librarian_id'])) {
-        throw new ApiException('Khong tim thay thong tin thu thu.', 403);
+        throw new ApiException('Không tìm thấy thông tin thủ thư.', 403);
     }
 
     $body = request_body();
     $decision = (string) ($body['decision'] ?? '');
     if (!in_array($decision, ['approved', 'rejected'], true)) {
-        throw new ApiException('Quyet dinh duyet khong hop le.');
+        throw new ApiException('Quyết định duyệt không hợp lệ.');
     }
 
     return match ($type) {
         'book' => review_book_request($pdo, $requestId, (int) $librarian['librarian_id'], $decision, request_note($body)),
         'equipment' => review_equipment_request($pdo, $requestId, (int) $librarian['librarian_id'], $decision, request_note($body)),
         'room' => review_room_request($pdo, $requestId, (int) $librarian['librarian_id'], $decision, request_note($body)),
-        default => throw new ApiException('Loai yeu cau khong hop le.'),
+        default => throw new ApiException('Loại yêu cầu không hợp lệ.'),
     };
 }
 
@@ -968,10 +972,10 @@ function review_book_request(PDO $pdo, int $requestId, int $librarianId, string 
         $request->execute(['id' => $requestId]);
         $header = $request->fetch();
         if (!$header) {
-            throw new ApiException('Khong tim thay yeu cau muon sach.', 404);
+            throw new ApiException('Không tìm thấy yêu cầu mượn sách.', 404);
         }
         if ($header['status'] !== 'pending') {
-            throw new ApiException('Yeu cau nay da duoc xu ly.');
+            throw new ApiException('Yêu cầu này đã được xử lý.');
         }
 
         if ($decision === 'rejected') {
@@ -989,7 +993,7 @@ function review_book_request(PDO $pdo, int $requestId, int $librarianId, string 
         $itemsStatement->execute(['id' => $requestId]);
         $items = $itemsStatement->fetchAll();
         if ($items === []) {
-            throw new ApiException('Yeu cau muon sach khong co chi tiet.');
+            throw new ApiException('Yêu cầu mượn sách không có chi tiết.');
         }
 
         $copyStatement = $pdo->prepare(
@@ -1003,7 +1007,7 @@ function review_book_request(PDO $pdo, int $requestId, int $librarianId, string 
         );
         foreach ($items as $item) {
             if ($item['requested_due_date'] <= date('Y-m-d')) {
-                throw new ApiException('Han tra cua yeu cau da qua. Sinh vien can tao yeu cau moi.');
+                throw new ApiException('Hạn trả của yêu cầu đã qua. Sinh viên cần tạo yêu cầu mới.');
             }
             $bookGuard->execute([$item['book_id']]);
             if (!$bookGuard->fetchColumn()) throw new ApiException('Đầu sách đang ẩn hoặc đã xóa. Không thể duyệt yêu cầu.',409);
@@ -1011,7 +1015,7 @@ function review_book_request(PDO $pdo, int $requestId, int $librarianId, string 
             $availableCopies = $copyStatement->fetchAll();
             $quantity = (int) $item['quantity'];
             if (count($availableCopies) < $quantity) {
-                throw new ApiException('Mot hoac nhieu sach khong con du so luong ban sao san sang.');
+                throw new ApiException('Một hoặc nhiều đầu sách không còn đủ số bản sẵn sàng.');
             }
             for ($copyIndex = 0; $copyIndex < $quantity; $copyIndex++) {
                 $copies[] = ['copy_id' => (int) $availableCopies[$copyIndex]['id'], 'due_date' => $item['requested_due_date']];
@@ -1061,10 +1065,10 @@ function review_equipment_request(PDO $pdo, int $requestId, int $librarianId, st
         $request->execute(['id' => $requestId]);
         $header = $request->fetch();
         if (!$header) {
-            throw new ApiException('Khong tim thay yeu cau muon thiet bi.', 404);
+            throw new ApiException('Không tìm thấy yêu cầu mượn thiết bị.', 404);
         }
         if ($header['status'] !== 'pending') {
-            throw new ApiException('Yeu cau nay da duoc xu ly.');
+            throw new ApiException('Yêu cầu này đã được xử lý.');
         }
 
         if ($decision === 'rejected') {
@@ -1084,19 +1088,19 @@ function review_equipment_request(PDO $pdo, int $requestId, int $librarianId, st
         $itemsStatement->execute(['id' => $requestId]);
         $items = $itemsStatement->fetchAll();
         if ($items === []) {
-            throw new ApiException('Yeu cau muon thiet bi khong co chi tiet.');
+            throw new ApiException('Yêu cầu mượn thiết bị không có chi tiết.');
         }
 
         $equipmentStatement = $pdo->prepare('SELECT id, available_quantity, status FROM equipment WHERE id = :id AND is_visible=1 AND deleted_at IS NULL FOR UPDATE');
         $equipmentUpdates = [];
         foreach ($items as $item) {
             if ($item['requested_due_date'] <= date('Y-m-d')) {
-                throw new ApiException('Han tra cua yeu cau da qua. Sinh vien can tao yeu cau moi.');
+                throw new ApiException('Hạn trả của yêu cầu đã qua. Sinh viên cần tạo yêu cầu mới.');
             }
             $equipmentStatement->execute(['id' => $item['equipment_id']]);
             $equipment = $equipmentStatement->fetch();
             if (!$equipment || $equipment['status'] !== 'available' || (int) $equipment['available_quantity'] < (int) $item['quantity']) {
-                throw new ApiException('Mot hoac nhieu thiet bi khong du so luong san sang.');
+                throw new ApiException('Một hoặc nhiều thiết bị không đủ số lượng sẵn sàng.');
             }
             $equipmentUpdates[] = [
                 'equipment_id' => (int) $equipment['id'],
@@ -1159,10 +1163,10 @@ function review_room_request(PDO $pdo, int $requestId, int $librarianId, string 
         $request->execute(['id' => $requestId]);
         $header = $request->fetch();
         if (!$header) {
-            throw new ApiException('Khong tim thay yeu cau dat phong.', 404);
+            throw new ApiException('Không tìm thấy yêu cầu đặt phòng.', 404);
         }
         if ($header['status'] !== 'pending') {
-            throw new ApiException('Yeu cau nay da duoc xu ly.');
+            throw new ApiException('Yêu cầu này đã được xử lý.');
         }
 
         if ($decision === 'approved') {
@@ -1170,7 +1174,7 @@ function review_room_request(PDO $pdo, int $requestId, int $librarianId, string 
             $room->execute(['id' => $header['room_id']]);
             $roomData = $room->fetch();
             if (!$roomData || $roomData['status'] !== 'available') {
-                throw new ApiException('Phong nay khong con san sang de duyet.');
+                throw new ApiException('Phòng này không còn sẵn sàng để duyệt.');
             }
 
             $conflict = $pdo->prepare(
@@ -1188,7 +1192,7 @@ function review_room_request(PDO $pdo, int $requestId, int $librarianId, string 
                 'end_time' => $header['end_time'],
             ]);
             if ($conflict->fetchColumn() !== false) {
-                throw new ApiException('Phong da co lich duoc duyet trong khung gio nay.');
+                throw new ApiException('Phòng đã có lịch được duyệt trong khung giờ này.');
             }
         }
 
@@ -1241,7 +1245,7 @@ function returned_books(PDO $pdo): array
                 CASE WHEN ld.return_status = 'late' THEN 'Tra tre'
                      WHEN ld.return_status = 'on_time' THEN 'Tra dung han'
                      WHEN ld.return_date > ld.due_date THEN 'Tra tre' ELSE 'Tra dung han' END AS return_status,
-                CASE WHEN ld.return_status = 'late' THEN ld.late_days
+                CASE WHEN ld.return_status IS NOT NULL THEN ld.late_days
                      ELSE GREATEST(DATEDIFF(ld.return_date, ld.due_date), 0) END AS late_days
          FROM loan_details ld
          JOIN loan_receipts lr ON lr.id = ld.receipt_id
@@ -1380,8 +1384,8 @@ function mark_book_return(PDO $pdo, int $loanDetailId): array
         $today = date('Y-m-d');
         $returnDate = $today;
         if ($returnDate < $loan['borrow_date']) throw new ApiException('Ngày nhận trả không được trước ngày mượn.');
-        $computed=integrity_return_result($loan['due_date'],$returnDate);
-        $returnStatus=$computed['return_status'];$lateDays=$computed['late_days'];
+        $lateDays=resource_int($body+['late_days'=>0],'late_days',0,65535);
+        $returnStatus=$lateDays>0?'late':'on_time';
 
         $update = $pdo->prepare(
             "UPDATE loan_details
@@ -1459,8 +1463,8 @@ function mark_equipment_return(PDO $pdo, int $equipmentDetailId): array
         $today = date('Y-m-d');
         $returnDate = $today;
         if ($returnDate < $loan['borrow_date']) throw new ApiException('Ngày nhận trả không được trước ngày mượn.');
-        $computed=integrity_return_result($loan['due_date'],$returnDate);
-        $returnStatus=$computed['return_status'];$lateDays=$computed['late_days'];
+        $lateDays=resource_int($body+['late_days'=>0],'late_days',0,65535);
+        $returnStatus=$lateDays>0?'late':'on_time';
 
         $update = $pdo->prepare(
             "UPDATE equipment_loan_details
@@ -1545,7 +1549,7 @@ function student_history(PDO $pdo, string $studentCode): array
     $books->execute(['student_id' => $studentData['id']]);
 
     $equipment = $pdo->prepare(
-        "SELECT 'equipment' AS resource_type, el.id AS receipt_id, e.name AS resource_name,
+        "SELECT 'equipment' AS resource_type, el.id AS receipt_id, eld.id AS equipment_detail_id, e.name AS resource_name,
                 eld.borrow_date, eld.due_date, eld.return_date, eld.quantity,
                 CASE WHEN eld.return_date IS NULL AND eld.due_date < CURDATE() THEN 'Qua han'
                      WHEN eld.return_date IS NULL THEN 'Dang muon'
@@ -1763,7 +1767,7 @@ function returned_equipment(PDO $pdo): array
                 CASE WHEN eld.return_status = 'late' THEN 'Tra tre'
                      WHEN eld.return_status = 'on_time' THEN 'Tra dung han'
                      WHEN eld.return_date > eld.due_date THEN 'Tra tre' ELSE 'Tra dung han' END AS return_status,
-                CASE WHEN eld.return_status = 'late' THEN eld.late_days
+                CASE WHEN eld.return_status IS NOT NULL THEN eld.late_days
                      ELSE GREATEST(DATEDIFF(eld.return_date, eld.due_date), 0) END AS late_days
          FROM equipment_loan_details eld
          JOIN equipment_loans el ON el.id = eld.loan_id

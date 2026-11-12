@@ -13,7 +13,7 @@ $uniqueColumn="active_copy_id INT UNSIGNED GENERATED ALWAYS AS (CASE WHEN return
 if ($mode==='--sql') {
     echo "-- Generated from app/integrity.php. Back up first. Prefer the idempotent PHP migration runner.\n";
     foreach (['loan_details','equipment_loan_details'] as $table) {
-        echo "UPDATE $table SET return_status=IF(return_date>due_date,'late','on_time'),late_days=GREATEST(DATEDIFF(return_date,due_date),0),status='returned' WHERE return_date IS NOT NULL;\n";
+        echo "UPDATE $table SET return_status=IF(late_days>0,'late','on_time'),status='returned' WHERE return_date IS NOT NULL;\n";
         echo "UPDATE $table SET return_status=NULL,late_days=0,condition_on_return=NULL,status=IF(due_date<CURDATE(),'overdue','borrowed') WHERE return_date IS NULL;\n";
     }
     foreach ($rules as $table=>$checks) foreach ($checks as $name=>$expression) echo "ALTER TABLE `$table` ADD CONSTRAINT `$name` CHECK ($expression);\n";
@@ -55,7 +55,7 @@ $repaired=[];$applied=[];
 $pdo->beginTransaction();
 try {
     foreach (['loan_details','equipment_loan_details'] as $table) {
-        $repaired[$table]=$pdo->exec("UPDATE $table SET return_status=IF(return_date>due_date,'late','on_time'),late_days=GREATEST(DATEDIFF(return_date,due_date),0),status='returned' WHERE return_date IS NOT NULL AND (return_status IS NULL OR return_status<>IF(return_date>due_date,'late','on_time') OR late_days<>GREATEST(DATEDIFF(return_date,due_date),0) OR status<>'returned')");
+        $repaired[$table]=$pdo->exec("UPDATE $table SET return_status=IF(late_days>0,'late','on_time'),status='returned' WHERE return_date IS NOT NULL AND (return_status IS NULL OR return_status<>IF(late_days>0,'late','on_time') OR status<>'returned')");
         $repaired[$table]+=$pdo->exec("UPDATE $table SET return_status=NULL,late_days=0,condition_on_return=NULL,status=IF(due_date<CURDATE(),'overdue','borrowed') WHERE return_date IS NULL AND (return_status IS NOT NULL OR late_days<>0 OR condition_on_return IS NOT NULL OR status NOT IN ('borrowed','overdue'))");
     }
     if (audit_integrity($pdo,$rules)) throw new RuntimeException('Data still violates constraints after deterministic return-field repair');

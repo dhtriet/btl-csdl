@@ -13,12 +13,13 @@ CSDL được cung cấp riêng trên Alwaysdata. Quá trình triển khai Rende
 Phiên bản hiện tại đã bỏ đối soát và nhật ký điều chỉnh thiết bị. Với database cũ: triển khai mã mới trước, sau đó chạy `php scripts/remove-equipment-inventory.php --apply` để sao lưu rồi gỡ bảng cũ và cột thời điểm kiểm kê. Số lượng thiết bị dùng cho nghiệp vụ mượn trả được giữ nguyên. Chạy `scripts/migrate-extension-requests.php --apply` trước khi triển khai nếu database chưa có yêu cầu gia hạn.
 
 1. Sao lưu CSDL hosting và chuẩn bị các tệp của phiên bản mới.
+   Với bản gia hạn thiết bị/phòng và nhập số ngày trả trễ: chạy `php scripts/migrate-manual-return-days.php --apply` và `php scripts/migrate-resource-extensions.php --apply` trước khi triển khai mã mới. Hai runner có backup, chạy lại an toàn; migration số ngày trễ tương thích MySQL/MariaDB. Không nạp lại schema/seed vào hosting.
 2. Chạy `php scripts/migrate-circulation.php --check` với cấu hình database hosting, sau đó `--apply` khi triển khai phiên bản này. Runner tạo snapshot riêng trước DDL và có thể chạy lại an toàn. Tệp `database/schema.sql` dành cho khởi tạo mới và có DROP TABLE; không chạy nó lên database đang có dữ liệu.
 3. Xác minh đủ bảng/cột/ràng buộc. Số dư chưa rõ nguyên nhân được đưa vào nhóm không khả dụng chờ kiểm kê; liên kết phiếu cũ chỉ khôi phục khi có bằng chứng duy nhất.
 4. Push mã nguồn lên GitHub, triển khai commit đó trên Render và kiểm tra phiên bản Live.
 5. Kiểm tra đăng nhập ba vai trò, danh mục, hồ sơ admin, yêu cầu gia hạn, truy vết và trạng thái PDF/trợ lý. Kiểm thử có ghi dữ liệu phải dùng CSDL test riêng.
 
-Schema mới có 26 bảng. [Từ điển](database-schema.md) và [ERD](database-erd.mmd) được sinh từ cùng metadata bằng `php scripts/document-schema.php`. [Tài liệu chuẩn hóa](normalization.md) ghi rõ các thuộc tính suy diễn và phi chuẩn hóa được kiểm soát.
+Schema mới có 27 bảng. [Từ điển](database-schema.md) và [ERD](database-erd.mmd) được sinh từ cùng metadata bằng `php scripts/document-schema.php`. [Tài liệu chuẩn hóa](normalization.md) ghi rõ các thuộc tính suy diễn và phi chuẩn hóa được kiểm soát.
 
 ## PDF và chỉ mục trợ lý
 

@@ -13,6 +13,19 @@ function require_staff(): array
     return $user;
 }
 
+function managed_publisher_id(PDO $pdo,array $body): int
+{
+    $name=resource_text($body,'publisher_name',160,true);
+    $name=preg_replace('/\s+/u',' ',$name);
+    // Serialize this small shared catalog while the enclosing book transaction is open.
+    $pdo->query('SELECT id FROM publishers ORDER BY id FOR UPDATE')->fetchAll();
+    $q=$pdo->prepare('SELECT id FROM publishers WHERE name=? ORDER BY id LIMIT 1');$q->execute([$name]);
+    $id=$q->fetchColumn();
+    if ($id!==false) return (int)$id;
+    $q=$pdo->prepare('INSERT INTO publishers (name) VALUES (?)');$q->execute([$name]);
+    return (int)$pdo->lastInsertId();
+}
+
 function managed_types(): array
 {
     return [
@@ -244,6 +257,7 @@ function manage_resources(PDO $pdo, string $method, ?string $type, ?string $rawI
             $visibility->execute(['visible' => $visible, 'id' => $id]);
             $saved=managed_record($pdo,$type,$id);$pdo->commit();json_response(['data'=>$saved]);
         }
+        if ($type==='books' && ($body['publisher_id']??null)==='__new__') $body['publisher_id']=managed_publisher_id($pdo,$body);
         $data=validate_resource($pdo,$type,$body,$old);
         if ($old) {
             $fields=implode(',',array_map(static fn($key)=>"`$key` = ?",array_keys($data)));

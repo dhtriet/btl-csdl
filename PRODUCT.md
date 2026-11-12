@@ -16,11 +16,11 @@ Bring the center's learning resources and students' borrowing activity into one 
 
 ## Capabilities and Constraints
 
-Librarians can issue multi-item book or equipment loans directly to a selected student at the counter. Counter and online requests share allocation, transaction and return rules; each new receipt has an explicit unique request link. Admins can inspect full reader/librarian contact profiles and related history without authentication secrets. The canonical schema has 26 tables; normalization notes explicitly disclose derived fields and controlled denormalization. Schema reference and ERD are generated from the same live metadata.
+Librarians can issue multi-item book or equipment loans directly to a selected student at the counter. Counter and online requests share allocation, transaction and return rules; each new receipt has an explicit unique request link. Admins can inspect full reader/librarian contact profiles and related history without authentication secrets. The canonical schema has 27 tables; normalization notes explicitly disclose derived fields and controlled denormalization. Schema reference and ERD are generated from the same live metadata.
 
 Students can create a learning kit from a goal, number of weeks, daily study time and current level. Recommendations contain up to three real catalog books, suggested reading focus, available PDF sources and weekly practice. The latest kit is private to each account. Adding selected books to the existing cart requires a separate borrowing submission. Preserve the distinction between catalog metadata, verified PDF passages and suggested exercises.
 
-Existing PHP/MySQL backend and plain HTML, CSS, JavaScript frontend. Preserve authentication, permissions, CSRF, existing data, resource workflows, PDF reading, and the learning assistant. Keep staff workflows available. The Pink Glam skin preserves the existing layout. The circulation extension requires the backed-up migration in scripts/migrate-circulation.php and the corresponding 26-table schema; its generated schema reference, ERD and normalization notes describe that implementation.
+Existing PHP/MySQL backend and plain HTML, CSS, JavaScript frontend. Preserve authentication, permissions, CSRF, existing data, resource workflows, PDF reading, and the learning assistant. Keep staff workflows available. The Pink Glam skin preserves the existing layout. The circulation extension requires the backed-up migration in scripts/migrate-circulation.php and the corresponding 27-table schema; its generated schema reference, ERD and normalization notes describe that implementation.
 
 ## Evidence on Hand
 
@@ -38,3 +38,5 @@ Students request book renewals from their own active loans. Librarians approve t
 - Keep personal deadlines and request status clear.
 - Preserve actual availability and permission boundaries.
 - Support keyboard navigation and smaller viewports.
+
+Equipment and room renewals use the same student-request/librarian-review workflow. Room extensions keep the booking day and check overlap under locks; equipment extensions preserve stock. Apply scripts/migrate-resource-extensions.php before serving the updated UI.

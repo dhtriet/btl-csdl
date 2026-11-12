@@ -55,6 +55,8 @@ with (log/'extensions-server.log').open('w',encoding='utf-8') as out:
         staff.call(f'/api/loan-details/{loan}/extend','POST',{'new_due_date':body()['new_due_date']},403)
         staff.call(review,'POST',{'status':'approved'})
         assert detail()['due_date']==body()['new_due_date'] and detail()['extension_count']==1
+        active=staff.call('/api/returns/books')
+        assert any(r['loan_detail_id']==loan and r['due_date']==body()['new_due_date'] for r in active), 'Renewed book must remain in the return queue'
         staff.call(review,'POST',{'status':'approved'},409)
         rejected=student.call('/api/extension-requests','POST',body(days=21),201)
         review=f'/api/extension-requests/{rejected["id"]}/review'
@@ -71,5 +73,16 @@ with (log/'extensions-server.log').open('w',encoding='utf-8') as out:
         staff.call(f'/api/extension-requests/{req["id"]}/review','POST',{'status':'approved'},409)
         staff.call(f'/api/extension-requests/{req["id"]}/review','POST',{'status':'rejected','review_note':'Sách đã trả.'})
         student.call('/api/extension-requests','POST',body(loan_id=second),422)
+        for invalid in [-1,1.5,65536]:
+            staff.call(f'/api/returns/books/{loan}','POST',{'late_days':invalid},422)
+        result=staff.call(f'/api/returns/books/{loan}','POST',{'condition_on_return':'good','late_days':4})
+        assert result['late_days']==4 and result['return_status']=='Tra tre'
+        returned=staff.call('/api/loan-receipts/'+str(receipt['receipt_id']))
+        line=next(d for d in returned['details'] if d['id']==loan)
+        assert line['late_days']==4 and line['return_status']=='late' and line['due_date']==body(days=28)['new_due_date']
+        zero=next(d for d in returned['details'] if d['id']==second)
+        assert zero['late_days']==0 and zero['return_status']=='on_time'
+        assert not any(r['loan_detail_id']==loan for r in staff.call('/api/returns/books'))
+        assert detail()['return_date'] is not None, 'A renewed book can still complete the return workflow'
         print(json.dumps({'checks':len(checks),'unchanged_until_approved':True,'permissions_csrf_duplicates':True,'rejection_preserves_due':True,'max_three':True,'returned_book_blocked':True}))
     finally:server.terminate();server.wait(timeout=10)

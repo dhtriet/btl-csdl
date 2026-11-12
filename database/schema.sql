@@ -6,6 +6,7 @@ USE resource_center;
 
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS resource_extension_requests;
 DROP TABLE IF EXISTS equipment_loan_request_items;
 DROP TABLE IF EXISTS equipment_loan_requests;
 DROP TABLE IF EXISTS book_loan_request_items;
@@ -362,6 +363,33 @@ CREATE TABLE equipment_loan_details (
     INDEX idx_equipment_loan_details_due (due_date, status)
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS resource_extension_requests (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    equipment_detail_id INT UNSIGNED NULL,
+    room_request_id INT UNSIGNED NULL,
+    old_deadline DATETIME NOT NULL,
+    requested_deadline DATETIME NOT NULL,
+    reason VARCHAR(500) NOT NULL DEFAULT '',
+    status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+    requested_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    librarian_id INT UNSIGNED NULL,
+    reviewed_at DATETIME NULL,
+    review_note VARCHAR(500) NULL,
+    pending_equipment_id INT UNSIGNED GENERATED ALWAYS AS (CASE WHEN status='pending' THEN equipment_detail_id ELSE NULL END) STORED,
+    pending_room_id INT UNSIGNED GENERATED ALWAYS AS (CASE WHEN status='pending' THEN room_request_id ELSE NULL END) STORED,
+    UNIQUE KEY uq_resource_extension_equipment (pending_equipment_id),
+    UNIQUE KEY uq_resource_extension_room (pending_room_id),
+    CONSTRAINT fk_resource_extension_equipment FOREIGN KEY (equipment_detail_id) REFERENCES equipment_loan_details(id),
+    CONSTRAINT fk_resource_extension_room FOREIGN KEY (room_request_id) REFERENCES room_requests(id),
+    CONSTRAINT fk_resource_extension_staff FOREIGN KEY (librarian_id) REFERENCES librarians(id),
+    CONSTRAINT chk_resource_extension_target CHECK ((equipment_detail_id IS NOT NULL) + (room_request_id IS NOT NULL) = 1),
+    CONSTRAINT chk_resource_extension_deadline CHECK (requested_deadline > old_deadline),
+    CONSTRAINT chk_resource_extension_review CHECK (
+        (status='pending' AND librarian_id IS NULL AND reviewed_at IS NULL)
+        OR (status IN ('approved','rejected') AND librarian_id IS NOT NULL AND reviewed_at IS NOT NULL)
+    )
+) ENGINE=InnoDB;
+
 -- Row invariants and one active loan per physical copy.
 ALTER TABLE `books` ADD CONSTRAINT `chk_books_pages` CHECK (pages IS NULL OR pages > 0);
 ALTER TABLE `ebooks` ADD CONSTRAINT `chk_ebooks_size` CHECK (file_size_mb IS NULL OR file_size_mb > 0);
@@ -374,11 +402,11 @@ ALTER TABLE `extensions` ADD CONSTRAINT `chk_extensions_dates` CHECK (old_due_da
 ALTER TABLE `loan_details` ADD CONSTRAINT `chk_loan_dates` CHECK (borrow_date >= '1000-01-01' AND due_date >= borrow_date AND (return_date IS NULL OR return_date >= borrow_date));
 ALTER TABLE `loan_details` ADD CONSTRAINT `chk_loan_extensions` CHECK (extension_count <= 3);
 ALTER TABLE `loan_details` ADD CONSTRAINT `chk_loan_return_state` CHECK ((return_date IS NULL AND status IN ('borrowed','overdue') AND return_status IS NULL AND late_days=0 AND condition_on_return IS NULL) OR (return_date IS NOT NULL AND status='returned' AND return_status IS NOT NULL AND condition_on_return IS NOT NULL AND CHAR_LENGTH(TRIM(condition_on_return))>0));
-ALTER TABLE `loan_details` ADD CONSTRAINT `chk_loan_return_result` CHECK (return_date IS NULL OR (late_days=GREATEST(DATEDIFF(return_date,due_date),0) AND return_status=IF(return_date>due_date,'late','on_time')));
+ALTER TABLE `loan_details` ADD CONSTRAINT `chk_loan_return_result` CHECK (return_date IS NULL OR return_status=IF(late_days>0,'late','on_time'));
 ALTER TABLE `equipment_loan_details` ADD CONSTRAINT `chk_equipment_loan_quantity` CHECK (quantity > 0);
 ALTER TABLE `equipment_loan_details` ADD CONSTRAINT `chk_equipment_loan_dates` CHECK (borrow_date >= '1000-01-01' AND due_date >= borrow_date AND (return_date IS NULL OR return_date >= borrow_date));
 ALTER TABLE `equipment_loan_details` ADD CONSTRAINT `chk_equipment_return_state` CHECK ((return_date IS NULL AND status IN ('borrowed','overdue') AND return_status IS NULL AND late_days=0 AND condition_on_return IS NULL) OR (return_date IS NOT NULL AND status='returned' AND return_status IS NOT NULL AND condition_on_return IS NOT NULL AND CHAR_LENGTH(TRIM(condition_on_return))>0));
-ALTER TABLE `equipment_loan_details` ADD CONSTRAINT `chk_equipment_return_result` CHECK (return_date IS NULL OR (late_days=GREATEST(DATEDIFF(return_date,due_date),0) AND return_status=IF(return_date>due_date,'late','on_time')));
+ALTER TABLE `equipment_loan_details` ADD CONSTRAINT `chk_equipment_return_result` CHECK (return_date IS NULL OR return_status=IF(late_days>0,'late','on_time'));
 ALTER TABLE loan_details ADD COLUMN active_copy_id INT UNSIGNED GENERATED ALWAYS AS (CASE WHEN return_date IS NULL THEN copy_id ELSE NULL END) VIRTUAL, ADD UNIQUE KEY uq_loan_details_active_copy(active_copy_id);
 ALTER TABLE equipment ADD CONSTRAINT chk_equipment_stock_buckets CHECK (available_quantity + unavailable_quantity <= total_quantity);
 

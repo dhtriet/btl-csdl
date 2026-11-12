@@ -82,11 +82,23 @@ async function openResourceEditor(id = null) {
       let input;
       if (kind==='enum' || kind==='publishers' || kind==='books') {
         const choices=kind==='enum'?max.map(value=>({ id:value, name:resourceStatuses[value] })):management.options[kind].map(item=>({ id:item.id, name:item.name || item.title }));
+        if (kind==='publishers') choices.push({id:'__new__',name:'Nhà xuất bản khác…'});
         input=`<select name="${name}" ${required?'required':''} ${disabled}>${kind==='enum'?'':'<option value="">Chọn…</option>'}${choices.map(item=>`<option value="${escapeHtml(item.id)}" ${String(item.id)===String(value)?'selected':''}>${escapeHtml(item.name)}</option>`).join('')}</select>`;
       } else if (kind==='textarea') input=`<textarea name="${name}" rows="3" maxlength="${name==='description'?20000:10000}">${escapeHtml(value)}</textarea>`;
       else input=`<input name="${name}" type="${kind==='number'?'number':'text'}" value="${escapeHtml(kind==='names'?(data[name] || []).join('; '):value)}" ${required?'required':''} ${kind==='number'?`min="${min}" max="${max}" step="1"`: `maxlength="${max || 3000}"`}>`;
       return `<label class="${kind==='textarea'?'field-wide':''}">${label}${required?' *':''}${input}</label>`;
     }).join('');
+    if (type==='books') {
+      const publisherSelect=$('#resource-editor-form').elements.publisher_id;
+      publisherSelect.closest('label').insertAdjacentHTML('afterend','<label id="resource-new-publisher" class="field-wide is-hidden">Tên nhà xuất bản mới *<input name="publisher_name" type="text" maxlength="160" disabled><small>Tên mới sẽ được lưu cùng đầu sách và xuất hiện trong danh sách lựa chọn lần sau.</small></label>');
+      publisherSelect.addEventListener('change',()=>{
+        const custom=publisherSelect.value==='__new__';
+        const input=$('#resource-editor-form').elements.publisher_name;
+        $('#resource-new-publisher').classList.toggle('is-hidden',!custom);
+        input.disabled=!custom;input.required=custom;
+        if(custom)input.focus();
+      });
+    }
     $('#resource-editor-fields').insertAdjacentHTML('afterbegin', `<label class="field-wide">Hiển thị với người dùng<select name="is_visible"><option value="1" ${Number(data.is_visible??1)?'selected':''}>Hiện</option><option value="0" ${Number(data.is_visible??1)?'':'selected'}>Đã ẩn</option></select><small>Ẩn khỏi danh mục và yêu cầu mới; giữ nguyên lịch sử mượn trả.</small></label>`);
     if (type!=='copies') {
       const image=data.cover_image || data.image_path || '';

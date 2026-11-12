@@ -1,8 +1,8 @@
 # Lược đồ triển khai Nexus
 
-Sinh tự động bằng `php scripts/document-schema.php` từ metadata MySQL; không chứa dữ liệu cá nhân. Nguồn khởi tạo: `database/schema.sql`; CSDL cũ nâng cấp bằng `scripts/migrate-circulation.php --apply` và `scripts/migrate-extension-requests.php --apply`.
+Sinh tự động bằng `php scripts/document-schema.php` từ metadata MySQL; không chứa dữ liệu cá nhân. Nguồn khởi tạo: `database/schema.sql`; CSDL cũ nâng cấp bằng `scripts/migrate-circulation.php --apply` và `scripts/migrate-extension-requests.php --apply`, `scripts/migrate-resource-extensions.php --apply`.
 
-Số bảng: **26**. Cùng một tập metadata tạo tài liệu này và `database-erd.mmd`; dùng hai tệp này khi cập nhật báo cáo và slide.
+Số bảng: **27**. Cùng một tập metadata tạo tài liệu này và `database-erd.mmd`; dùng hai tệp này khi cập nhật báo cáo và slide.
 
 ## `accounts`
 
@@ -166,7 +166,7 @@ Số bảng: **26**. Cùng một tập metadata tạo tài liệu này và `data
 
 - `chk_equipment_loan_quantity`: `(`quantity` > 0)`
 
-- `chk_equipment_return_result`: `((`return_date` is null) or ((`late_days` = greatest((to_days(`return_date`) - to_days(`due_date`)),0)) and (`return_status` = if((`return_date` > `due_date`),_utf8mb4\'late\',_utf8mb4\'on_time\'))))`
+- `chk_equipment_return_result`: `((`return_date` is null) or (`return_status` = if((`late_days` > 0),_utf8mb4\'late\',_utf8mb4\'on_time\')))`
 
 - `chk_equipment_return_state`: `(((`return_date` is null) and (`status` in (_utf8mb4\'borrowed\',_utf8mb4\'overdue\')) and (`return_status` is null) and (`late_days` = 0) and (`condition_on_return` is null)) or ((`return_date` is not null) and (`status` = _utf8mb4\'returned\') and (`return_status` is not null) and (`condition_on_return` is not null) and (char_length(trim(`condition_on_return`)) > 0)))`
 
@@ -286,7 +286,7 @@ Số bảng: **26**. Cùng một tập metadata tạo tài liệu này và `data
 
 - `chk_loan_extensions`: `(`extension_count` <= 3)`
 
-- `chk_loan_return_result`: `((`return_date` is null) or ((`late_days` = greatest((to_days(`return_date`) - to_days(`due_date`)),0)) and (`return_status` = if((`return_date` > `due_date`),_utf8mb4\'late\',_utf8mb4\'on_time\'))))`
+- `chk_loan_return_result`: `((`return_date` is null) or (`return_status` = if((`late_days` > 0),_utf8mb4\'late\',_utf8mb4\'on_time\')))`
 
 - `chk_loan_return_state`: `(((`return_date` is null) and (`status` in (_utf8mb4\'borrowed\',_utf8mb4\'overdue\')) and (`return_status` is null) and (`late_days` = 0) and (`condition_on_return` is null)) or ((`return_date` is not null) and (`status` = _utf8mb4\'returned\') and (`return_status` is not null) and (`condition_on_return` is not null) and (char_length(trim(`condition_on_return`)) > 0)))`
 
@@ -311,6 +311,30 @@ Số bảng: **26**. Cùng một tập metadata tạo tài liệu này và `data
 | `address` | `varchar(255)` | YES |  | — |
 | `email` | `varchar(120)` | YES |  | — |
 | `phone` | `varchar(30)` | YES |  | — |
+
+## `resource_extension_requests`
+
+| Thuộc tính | Kiểu | NULL | Khóa | Mặc định / suy diễn |
+|---|---|---|---|---|
+| `id` | `int unsigned` | NO | PK | — |
+| `equipment_detail_id` | `int unsigned` | YES | FK | — |
+| `room_request_id` | `int unsigned` | YES | FK | — |
+| `old_deadline` | `datetime` | NO |  | — |
+| `requested_deadline` | `datetime` | NO |  | — |
+| `reason` | `varchar(500)` | NO |  |  |
+| `status` | `enum('pending','approved','rejected')` | NO |  | pending |
+| `requested_at` | `datetime` | NO |  | CURRENT_TIMESTAMP |
+| `librarian_id` | `int unsigned` | YES | FK | — |
+| `reviewed_at` | `datetime` | YES |  | — |
+| `review_note` | `varchar(500)` | YES |  | — |
+| `pending_equipment_id` | `int unsigned` | YES | UK | (case when (`status` = _utf8mb4\'pending\') then `equipment_detail_id` else NULL end) |
+| `pending_room_id` | `int unsigned` | YES | UK | (case when (`status` = _utf8mb4\'pending\') then `room_request_id` else NULL end) |
+
+- `chk_resource_extension_deadline`: `(`requested_deadline` > `old_deadline`)`
+
+- `chk_resource_extension_review`: `(((`status` = _utf8mb4\'pending\') and (`librarian_id` is null) and (`reviewed_at` is null)) or ((`status` in (_utf8mb4\'approved\',_utf8mb4\'rejected\')) and (`librarian_id` is not null) and (`reviewed_at` is not null)))`
+
+- `chk_resource_extension_target`: `(((`equipment_detail_id` is not null) + (`room_request_id` is not null)) = 1)`
 
 ## `room_requests`
 
@@ -397,6 +421,9 @@ Số bảng: **26**. Cùng một tập metadata tạo tài liệu này và `data
 | `loan_receipts.librarian_id` | `librarians.id` | `fk_loan_receipts_librarian` |
 | `loan_receipts.request_id` | `book_loan_requests.id` | `fk_loan_receipts_request` |
 | `loan_receipts.student_id` | `students.id` | `fk_loan_receipts_student` |
+| `resource_extension_requests.equipment_detail_id` | `equipment_loan_details.id` | `fk_resource_extension_equipment` |
+| `resource_extension_requests.room_request_id` | `room_requests.id` | `fk_resource_extension_room` |
+| `resource_extension_requests.librarian_id` | `librarians.id` | `fk_resource_extension_staff` |
 | `room_requests.librarian_id` | `librarians.id` | `fk_room_requests_librarian` |
 | `room_requests.room_id` | `rooms.id` | `fk_room_requests_room` |
 | `room_requests.student_id` | `students.id` | `fk_room_requests_student` |

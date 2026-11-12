@@ -5,7 +5,7 @@ function integrity_rules(): array
 {
     $dates="borrow_date >= '1000-01-01' AND due_date >= borrow_date AND (return_date IS NULL OR return_date >= borrow_date)";
     $state="(return_date IS NULL AND status IN ('borrowed','overdue') AND return_status IS NULL AND late_days=0 AND condition_on_return IS NULL) OR (return_date IS NOT NULL AND status='returned' AND return_status IS NOT NULL AND condition_on_return IS NOT NULL AND CHAR_LENGTH(TRIM(condition_on_return))>0)";
-    $result="return_date IS NULL OR (late_days=GREATEST(DATEDIFF(return_date,due_date),0) AND return_status=IF(return_date>due_date,'late','on_time'))";
+    $result="return_date IS NULL OR return_status=IF(late_days>0,'late','on_time')";
     return [
         'books'=>['chk_books_pages'=>'pages IS NULL OR pages > 0'],
         'ebooks'=>['chk_ebooks_size'=>'file_size_mb IS NULL OR file_size_mb > 0'],

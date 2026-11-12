@@ -204,6 +204,21 @@ erDiagram
         varchar email
         varchar phone
     }
+    resource_extension_requests {
+        int id PK
+        int equipment_detail_id FK
+        int room_request_id FK
+        datetime old_deadline
+        datetime requested_deadline
+        varchar reason
+        enum status
+        datetime requested_at
+        int librarian_id FK
+        datetime reviewed_at
+        varchar review_note
+        int pending_equipment_id UK
+        int pending_room_id UK
+    }
     room_requests {
         int id PK
         int student_id FK
@@ -272,6 +287,9 @@ erDiagram
     librarians ||--o{ loan_receipts : librarian_id
     book_loan_requests o|--o| loan_receipts : request_id
     students ||--o{ loan_receipts : student_id
+    equipment_loan_details o|--o{ resource_extension_requests : equipment_detail_id
+    room_requests o|--o{ resource_extension_requests : room_request_id
+    librarians o|--o{ resource_extension_requests : librarian_id
     librarians o|--o{ room_requests : librarian_id
     rooms ||--o{ room_requests : room_id
     students ||--o{ room_requests : student_id
